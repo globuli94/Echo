@@ -21,7 +21,13 @@ import '../../features/auth/presentation/screens/signup_screen.dart';
 /// BLoC stream to that interface.
 class _AuthNotifier extends ChangeNotifier {
   _AuthNotifier(AuthBloc authBloc) {
-    _subscription = authBloc.stream.listen((_) => notifyListeners());
+    _subscription = authBloc.stream.listen((state) {
+      if (state is AuthAuthenticated ||
+          state is AuthUnauthenticated ||
+          state is AuthInitial) {
+        notifyListeners();
+      }
+    });
   }
 
   late final StreamSubscription<AuthState> _subscription;
