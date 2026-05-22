@@ -52,19 +52,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _onForgotPasswordPressed() async {
-    final emailController = TextEditingController(
-      text: _emailController.text.trim(),
-    );
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => _ForgotPasswordDialog(
-        emailController: emailController,
+        initialEmail: _emailController.text.trim(),
         onSubmit: (email) {
           context.read<AuthBloc>().add(ForgotPasswordRequested(email: email));
         },
       ),
     );
-    emailController.dispose();
   }
 
   @override
@@ -201,21 +197,40 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 /// Dialog that collects an email address and dispatches [ForgotPasswordRequested].
-class _ForgotPasswordDialog extends StatelessWidget {
+class _ForgotPasswordDialog extends StatefulWidget {
   const _ForgotPasswordDialog({
-    required this.emailController,
+    required this.initialEmail,
     required this.onSubmit,
   });
 
-  final TextEditingController emailController;
+  final String initialEmail;
   final void Function(String email) onSubmit;
+
+  @override
+  State<_ForgotPasswordDialog> createState() => _ForgotPasswordDialogState();
+}
+
+class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
+  late final TextEditingController _emailController;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController(text: widget.initialEmail);
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Reset Password'),
       content: TextField(
-        controller: emailController,
+        controller: _emailController,
         keyboardType: TextInputType.emailAddress,
         decoration: const InputDecoration(hintText: 'Email'),
       ),
@@ -226,9 +241,9 @@ class _ForgotPasswordDialog extends StatelessWidget {
         ),
         ElevatedButton(
           onPressed: () {
-            final email = emailController.text.trim();
+            final email = _emailController.text.trim();
             if (email.isNotEmpty) {
-              onSubmit(email);
+              widget.onSubmit(email);
               Navigator.of(context).pop();
             }
           },
