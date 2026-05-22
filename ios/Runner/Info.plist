@@ -41,12 +41,14 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>GIDClientID</key>
+	<string>608728058117-v506ssdksim6qrq7b9nbf1t5ku64rjns.apps.googleusercontent.com</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>$(REVERSED_CLIENT_ID)</string>
+				<string>com.googleusercontent.apps.608728058117-v506ssdksim6qrq7b9nbf1t5ku64rjns</string>
 			</array>
 		</dict>
 	</array>
