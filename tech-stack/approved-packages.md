@@ -41,7 +41,7 @@
 |---|---|---|
 | `flutter_test` | SDK | Built-in Flutter test framework |
 | `mocktail` | `^1.0.4` | Null-safe mocking for unit and widget tests |
-| `bloc_test` | `^9.1.7` | BLoC-specific test utilities |
+| `bloc_test` | `^10.0.0` | BLoC-specific test utilities |
 
 ---
-*Last updated: 2026-05-22 by CTO (APP-001 initial scaffold)*
+*Last updated: 2026-05-22 by CTO (APP-001 — corrected bloc_test to ^10.0.0, current stable)*
