@@ -11,9 +11,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
-import '../../features/auth/presentation/screens/home_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/signup_screen.dart';
+import '../../features/navigation/presentation/screens/main_shell.dart';
 
 /// A [ChangeNotifier] that forwards [AuthBloc] state changes to [GoRouter].
 ///
@@ -67,7 +67,7 @@ GoRouter createRouter(AuthBloc authBloc) {
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) => const MainShell(),
       ),
     ],
   );
