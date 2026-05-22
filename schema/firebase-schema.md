@@ -70,6 +70,19 @@
 | Cloud Firestore | Primary database for all user and post data |
 | Firebase Storage | Avatar image uploads referenced by `users.avatarUrl` |
 
+## Authentication Providers
+
+Firebase Authentication is enabled on project `echo-9cf94` with the following providers:
+
+| Provider | Status | Notes |
+|---|---|---|
+| Email/Password | Enabled | Standard email + password sign-up and sign-in |
+| Google Sign-In | Enabled | OAuth 2.0; iOS client ID `608728058117-v506ssdksim6qrq7b9nbf1t5ku64rjns.apps.googleusercontent.com` |
+
+iOS OAuth configuration:
+- `GIDClientID` in `ios/Runner/Info.plist`: `608728058117-v506ssdksim6qrq7b9nbf1t5ku64rjns.apps.googleusercontent.com`
+- `REVERSED_CLIENT_ID` URL scheme in `ios/Runner/Info.plist`: `com.googleusercontent.apps.608728058117-v506ssdksim6qrq7b9nbf1t5ku64rjns`
+
 ---
 
 ## Change Log
@@ -77,3 +90,4 @@
 | Date | Classification | Description |
 |---|---|---|
 | 2026-05-22 | Safe | Initial schema — `users` and `posts` collections created |
+| 2026-05-23 | Safe | Firebase Authentication enabled — Email/Password and Google Sign-In providers; iOS OAuth settings configured |

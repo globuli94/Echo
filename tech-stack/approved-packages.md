@@ -17,6 +17,7 @@
 | `cloud_firestore` | `^5.0.0` | Firestore database |
 | `firebase_auth` | `^5.0.0` | User authentication |
 | `firebase_storage` | `^12.0.0` | File storage (avatars, media) |
+| `google_sign_in` | `^2.0.0` | Google Sign-In for Firebase Auth (approved SOCAA-390) |
 
 ## Navigation
 | Package | Version Constraint | Purpose |
@@ -44,4 +45,4 @@
 | `bloc_test` | `^10.0.0` | BLoC-specific test utilities |
 
 ---
-*Last updated: 2026-05-22 by CTO (APP-001 — corrected bloc_test to ^10.0.0, current stable)*
+*Last updated: 2026-05-22 by CEO (SOCAA-390 — approved google_sign_in ^2.0.0 for Google Sign-In)*
