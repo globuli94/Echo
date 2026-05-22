@@ -19,14 +19,18 @@ import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
-import 'firebase/firebase_options.dart';
+import 'firebase_options.dart';
 
 /// Initialises Firebase and runs the app.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (_) {
+    // Firebase already initialised on the native side (e.g. hot restart).
+  }
 
   final dataSource = AuthRemoteDataSourceImpl(
     firebaseAuth: FirebaseAuth.instance,
