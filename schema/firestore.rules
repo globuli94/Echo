@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------
+    // users/{uid}
+    // ---------------------------------------------------------------
+    match /users/{uid} {
+      // Any authenticated user may read any user profile.
+      allow read: if request.auth != null;
+
+      // Only the owner may create their own document, and only when
+      // the document ID matches their auth UID.
+      allow create: if request.auth != null
+                    && request.auth.uid == uid;
+
+      // Only the owner may update their own profile.
+      allow update: if request.auth != null
+                    && request.auth.uid == uid;
+
+      // Deletion of user documents is not permitted via the client SDK.
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------
+    // posts/{postId}
+    // ---------------------------------------------------------------
+    match /posts/{postId} {
+      // Any authenticated user may read any post.
+      allow read: if request.auth != null;
+
+      // Any authenticated user may create a post, but authorId must
+      // equal the requesting user's UID.
+      allow create: if request.auth != null
+                    && request.resource.data.authorId == request.auth.uid;
+
+      // Updates are restricted:
+      //   - The owner may update any field on their own post.
+      //   - Any authenticated user may update only the likeCount field.
+      allow update: if request.auth != null
+                    && (
+                      // Owner full-update path
+                      resource.data.authorId == request.auth.uid
+                      ||
+                      // Third-party likeCount-only path
+                      (
+                        request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['likeCount'])
+                      )
+                    );
+
+      // Only the author may delete their own post.
+      allow delete: if request.auth != null
+                    && resource.data.authorId == request.auth.uid;
+    }
+
+  }
+}
