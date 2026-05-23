@@ -79,9 +79,12 @@
 - Authenticated user creates their own follow document (`followerId == auth.uid`)
 - Authenticated user deletes their own follow document (`followerId == auth.uid`)
 - Any authenticated user reads a following subcollection document (e.g. to check if a follow relationship exists)
+- Any authenticated user lists all documents in a user's following subcollection (FollowingScreen)
+- Any authenticated user queries the `following` collection group filtering `targetUid == uid` to retrieve all followers of a user (FollowersScreen)
 
 **Query patterns:**
 - Fetch all documents from `users/{uid}/following` (no filter, no sort) — retrieve full following list to build feed; no composite index required
+- Collection group query on `following` filtering `targetUid == uid` — retrieve all followers of a user (FollowersScreen); **composite index required** (see `firestore.indexes.json`)
 
 ---
 
@@ -126,3 +129,4 @@ iOS OAuth configuration:
 | 2026-05-23 | Safe | SOCAA-402: Storage Paths section added documenting `avatars/{userId}`; `firestore.rules` update rule for `users` scoped to allowed fields (`displayName`, `bio`, `avatarUrl`) |
 | 2026-05-23 | Safe | SOCAA-408: `imageUrl` optional field added to `posts` collection; `posts/{uid}/{postId}` Storage path added |
 | 2026-05-23 | Safe | SOCAA-417: `users/{uid}/following/{targetUid}` subcollection added with `followedAt` and `targetUid` fields; `users` update rule expanded to allow any authenticated user to increment `followerCount` or `followingCount`; composite index for `posts(authorId, createdAt)` confirmed present |
+| 2026-05-23 | Safe | SOCAA-420: Collection group read rule added for `following` (FollowersScreen); COLLECTION_GROUP index on `following.targetUid` added to `firestore.indexes.json`; access and query patterns updated in schema doc |
