@@ -84,7 +84,7 @@
 
 **Query patterns:**
 - Fetch all documents from `users/{uid}/following` (no filter, no sort) — retrieve full following list to build feed; no composite index required
-- Collection group query on `following` filtering `targetUid == uid` — retrieve all followers of a user (FollowersScreen); **composite index required** (see `firestore.indexes.json`)
+- Collection group query on `following` filtering `targetUid == uid` — retrieve all followers of a user (FollowersScreen); Firestore automatically maintains a COLLECTION_GROUP single-field index on `targetUid`; no explicit composite index entry required in `firestore.indexes.json`
 
 ---
 
