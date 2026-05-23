@@ -7,27 +7,39 @@ import 'package:echo/features/auth/domain/entities/auth_user.dart';
 import 'package:echo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:echo/features/auth/presentation/bloc/auth_state.dart';
 import 'package:echo/features/navigation/presentation/screens/main_shell.dart';
+import 'package:echo/features/posts/presentation/bloc/post_bloc.dart';
+import 'package:echo/features/posts/presentation/bloc/post_state.dart';
 import 'package:echo/features/posts/presentation/bloc/user_posts_bloc.dart';
 import 'package:echo/features/posts/presentation/bloc/user_posts_state.dart';
 import 'package:echo/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:echo/features/profile/presentation/bloc/profile_state.dart';
+import 'package:echo/features/search/presentation/bloc/user_search_bloc.dart';
+import 'package:echo/features/search/presentation/bloc/user_search_state.dart';
 
 class MockAuthBloc extends Mock implements AuthBloc {}
 
 class MockProfileBloc extends Mock implements ProfileBloc {}
 
+class MockPostBloc extends Mock implements PostBloc {}
+
 class MockUserPostsBloc extends Mock implements UserPostsBloc {}
+
+class MockUserSearchBloc extends Mock implements UserSearchBloc {}
 
 void main() {
   group('MainShell', () {
     late MockAuthBloc mockAuthBloc;
     late MockProfileBloc mockProfileBloc;
+    late MockPostBloc mockPostBloc;
     late MockUserPostsBloc mockUserPostsBloc;
+    late MockUserSearchBloc mockUserSearchBloc;
 
     setUp(() {
       mockAuthBloc = MockAuthBloc();
       mockProfileBloc = MockProfileBloc();
+      mockPostBloc = MockPostBloc();
       mockUserPostsBloc = MockUserPostsBloc();
+      mockUserSearchBloc = MockUserSearchBloc();
 
       // Stub AuthBloc state
       when(() => mockAuthBloc.state).thenReturn(
@@ -41,10 +53,22 @@ void main() {
       when(() => mockProfileBloc.state).thenReturn(const ProfileInitial());
       when(() => mockProfileBloc.stream).thenAnswer((_) => const Stream.empty());
 
+      // Stub PostBloc state — required because FeedScreen reads this
+      // bloc via IndexedStack even when the Feed tab is not active.
+      when(() => mockPostBloc.state).thenReturn(const PostsInitial());
+      when(() => mockPostBloc.stream).thenAnswer((_) => const Stream.empty());
+
       // Stub UserPostsBloc state — required because ProfileScreen reads this
       // bloc via IndexedStack even when the Profile tab is not active.
       when(() => mockUserPostsBloc.state).thenReturn(const UserPostsInitial());
       when(() => mockUserPostsBloc.stream)
+          .thenAnswer((_) => const Stream.empty());
+
+      // Stub UserSearchBloc state — required because SearchScreen reads this
+      // bloc via IndexedStack even when the Search tab is not active.
+      when(() => mockUserSearchBloc.state)
+          .thenReturn(const UserSearchInitial());
+      when(() => mockUserSearchBloc.stream)
           .thenAnswer((_) => const Stream.empty());
     });
 
@@ -54,14 +78,16 @@ void main() {
           providers: [
             BlocProvider<AuthBloc>.value(value: mockAuthBloc),
             BlocProvider<ProfileBloc>.value(value: mockProfileBloc),
+            BlocProvider<PostBloc>.value(value: mockPostBloc),
             BlocProvider<UserPostsBloc>.value(value: mockUserPostsBloc),
+            BlocProvider<UserSearchBloc>.value(value: mockUserSearchBloc),
           ],
           child: const MainShell(),
         ),
       );
     }
 
-    testWidgets('displays bottom navigation bar with two tabs',
+    testWidgets('displays bottom navigation bar with three tabs',
         (WidgetTester tester) async {
       // Arrange & Act
       await tester.pumpWidget(createWidgetUnderTest());
@@ -79,12 +105,12 @@ void main() {
 
       expect(
         navBar.items.length,
-        equals(2),
-        reason: 'Bottom navigation bar should have exactly 2 tabs',
+        equals(3),
+        reason: 'Bottom navigation bar should have exactly 3 tabs',
       );
     });
 
-    testWidgets('bottom navigation bar has Feed and Profile tabs',
+    testWidgets('bottom navigation bar has Feed, Search, and Profile tabs',
         (WidgetTester tester) async {
       // Arrange & Act
       await tester.pumpWidget(createWidgetUnderTest());
@@ -94,6 +120,11 @@ void main() {
         find.text('Feed'),
         findsWidgets,
         reason: 'Feed tab should be labeled "Feed"',
+      );
+      expect(
+        find.text('Search'),
+        findsWidgets,
+        reason: 'Search tab should be labeled "Search"',
       );
       expect(
         find.text('Profile'),
@@ -133,8 +164,8 @@ void main() {
 
       expect(
         navBar.currentIndex,
-        equals(1),
-        reason: 'Profile tab (index 1) should be active after tapping',
+        equals(2),
+        reason: 'Profile tab (index 2) should be active after tapping',
       );
     });
 
