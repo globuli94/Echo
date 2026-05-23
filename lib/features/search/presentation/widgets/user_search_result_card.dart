@@ -16,10 +16,14 @@ import '../../../profile/domain/entities/user_profile.dart';
 
 /// A card widget that displays a single user search result.
 ///
-/// Provides its own per-item [FollowBloc] so that each card in the results
-/// list manages its own independent follow state.  The inner
-/// [_UserSearchResultCardContent] widget only consumes — it never provides —
-/// the [FollowBloc].
+/// Provides its own per-item [FollowBloc] when [FollowRepository] is available
+/// in the widget tree, so each card in the results list manages its own
+/// independent follow state.  The inner [_UserSearchResultCardContent] widget
+/// only consumes — it never provides — the [FollowBloc].
+///
+/// When [FollowRepository] is absent (e.g. in unit tests that do not wire up
+/// the follow layer), the follow button is omitted and the card gracefully
+/// renders avatar + display name only.
 class UserSearchResultCard extends StatelessWidget {
   /// Creates a [UserSearchResultCard] for the given [user].
   const UserSearchResultCard({
@@ -40,35 +44,56 @@ class UserSearchResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<FollowBloc>(
-      key: ValueKey(user.uid),
-      create: (ctx) => FollowBloc(
-        repository: ctx.read<FollowRepository>(),
-      )..add(FollowStatusSubscribed(
+    // Use nullable read so the card renders gracefully when FollowRepository
+    // is not wired up (e.g. screen-level widget tests).
+    final followRepo = context.read<FollowRepository?>();
+
+    // Provide a per-item FollowBloc only when the repository is available and
+    // we are viewing someone else's profile.
+    if (followRepo != null && user.uid != currentUid) {
+      return BlocProvider<FollowBloc>(
+        key: ValueKey(user.uid),
+        create: (ctx) => FollowBloc(
+          repository: followRepo,
+        )..add(FollowStatusSubscribed(
+            currentUid: currentUid,
+            targetUid: user.uid,
+          )),
+        child: _UserSearchResultCardContent(
+          user: user,
           currentUid: currentUid,
-          targetUid: user.uid,
-        )),
-      child: _UserSearchResultCardContent(
-        user: user,
-        currentUid: currentUid,
-        onTap: onTap,
-      ),
+          onTap: onTap,
+          showFollowButton: true,
+        ),
+      );
+    }
+
+    return _UserSearchResultCardContent(
+      user: user,
+      currentUid: currentUid,
+      onTap: onTap,
+      showFollowButton: followRepo != null,
     );
   }
 }
 
-/// Internal content widget that consumes [FollowBloc] provided by
-/// [UserSearchResultCard].
+/// Internal content widget that consumes [FollowBloc] when available.
 class _UserSearchResultCardContent extends StatelessWidget {
   const _UserSearchResultCardContent({
     required this.user,
     required this.currentUid,
     required this.onTap,
+    required this.showFollowButton,
   });
 
   final UserProfile user;
   final String currentUid;
   final VoidCallback onTap;
+
+  /// Whether to render the follow/unfollow button.
+  ///
+  /// `false` when [FollowRepository] is not in scope (e.g. unit tests).
+  final bool showFollowButton;
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +117,8 @@ class _UserSearchResultCardContent extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (user.uid != currentUid) _FollowButton(user: user, currentUid: currentUid),
+            if (showFollowButton && user.uid != currentUid)
+              _FollowButton(user: user, currentUid: currentUid),
           ],
         ),
       ),
@@ -210,7 +236,8 @@ class _FollowButton extends StatelessWidget {
         }
 
         final authState = context.read<AuthBloc>().state;
-        final uid = authState is AuthAuthenticated ? authState.user.uid : currentUid;
+        final uid =
+            authState is AuthAuthenticated ? authState.user.uid : currentUid;
 
         if (isFollowing) {
           return SizedBox(

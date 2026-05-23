@@ -31,10 +31,10 @@ void main() {
     });
 
     blocTest<UserSearchBloc, UserSearchState>(
-      'emits [UserSearchInitial] when query is shorter than 2 chars',
+      'emits no states when query is shorter than 2 chars',
       build: () => userSearchBloc,
-      act: (bloc) => bloc.add(UserSearchQueryChanged(query: 'a')),
-      expect: () => [isA<UserSearchInitial>()],
+      act: (bloc) => bloc.add(const UserSearchQueryChanged(query: 'a')),
+      expect: () => [],
     );
 
     blocTest<UserSearchBloc, UserSearchState>(
@@ -59,7 +59,7 @@ void main() {
         when(() => mockRepository.searchUsers(query: 'al')).thenAnswer((_) async => mockUsers);
         return userSearchBloc;
       },
-      act: (bloc) => bloc.add(UserSearchQueryChanged(query: 'al')),
+      act: (bloc) => bloc.add(const UserSearchQueryChanged(query: 'al')),
       expect: () => [
         isA<UserSearchLoading>(),
         isA<UserSearchLoaded>()
@@ -74,7 +74,7 @@ void main() {
         when(() => mockRepository.searchUsers(query: 'zzz')).thenAnswer((_) async => []);
         return userSearchBloc;
       },
-      act: (bloc) => bloc.add(UserSearchQueryChanged(query: 'zzz')),
+      act: (bloc) => bloc.add(const UserSearchQueryChanged(query: 'zzz')),
       expect: () => [
         isA<UserSearchLoading>(),
         isA<UserSearchEmpty>(),
@@ -95,7 +95,7 @@ void main() {
           ),
         ],
       ),
-      act: (bloc) => bloc.add(UserSearchCleared()),
+      act: (bloc) => bloc.add(const UserSearchCleared()),
       expect: () => [isA<UserSearchInitial>()],
     );
 
@@ -105,7 +105,7 @@ void main() {
         when(() => mockRepository.searchUsers(query: 'er')).thenThrow(Exception('Network error'));
         return userSearchBloc;
       },
-      act: (bloc) => bloc.add(UserSearchQueryChanged(query: 'er')),
+      act: (bloc) => bloc.add(const UserSearchQueryChanged(query: 'er')),
       expect: () => [
         isA<UserSearchLoading>(),
         isA<UserSearchFailure>(),

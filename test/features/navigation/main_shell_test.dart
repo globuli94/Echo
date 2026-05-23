@@ -2,6 +2,7 @@
 // Test suite for MainShell navigation.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:echo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:echo/features/auth/presentation/bloc/auth_event.dart';
 import 'package:echo/features/auth/presentation/bloc/auth_state.dart';
@@ -22,7 +23,6 @@ import 'package:echo/features/search/presentation/screens/search_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 class MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
 
@@ -50,6 +50,19 @@ void main() {
     mockPostBloc = MockPostBloc();
     mockUserPostsBloc = MockUserPostsBloc();
     mockUserSearchBloc = MockUserSearchBloc();
+
+    when(() => mockAuthBloc.state).thenReturn(const AuthUnauthenticated());
+    when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
+    when(() => mockProfileBloc.state).thenReturn(const ProfileInitial());
+    when(() => mockProfileBloc.stream).thenAnswer((_) => const Stream.empty());
+    when(() => mockPostBloc.state).thenReturn(const PostsInitial());
+    when(() => mockPostBloc.stream).thenAnswer((_) => const Stream.empty());
+    when(() => mockUserPostsBloc.state).thenReturn(const UserPostsInitial());
+    when(() => mockUserPostsBloc.stream)
+        .thenAnswer((_) => const Stream.empty());
+    when(() => mockUserSearchBloc.state).thenReturn(const UserSearchInitial());
+    when(() => mockUserSearchBloc.stream)
+        .thenAnswer((_) => const Stream.empty());
   });
 
   Widget createWidgetUnderTest() {
@@ -81,7 +94,10 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
 
       await tester.tap(find.byIcon(Icons.search));
-      await tester.pumpAndSettle();
+      // Use pump() instead of pumpAndSettle() because FeedScreen shows a
+      // CircularProgressIndicator in PostsInitial state, which continuously
+      // schedules animation frames and causes pumpAndSettle to time out.
+      await tester.pump();
 
       expect(find.byType(SearchScreen), findsOneWidget);
     });

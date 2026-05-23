@@ -2,6 +2,7 @@
 // Test suite for SearchScreen widget.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:echo/features/auth/domain/entities/auth_user.dart';
 import 'package:echo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:echo/features/auth/presentation/bloc/auth_event.dart';
 import 'package:echo/features/auth/presentation/bloc/auth_state.dart';
@@ -27,6 +28,13 @@ void main() {
   setUp(() {
     mockUserSearchBloc = MockUserSearchBloc();
     mockAuthBloc = MockAuthBloc();
+
+    // Stub AuthBloc state to avoid null state errors
+    when(() => mockAuthBloc.state).thenReturn(
+      const AuthAuthenticated(
+        user: AuthUser(uid: 'test-uid', email: 'test@example.com'),
+      ),
+    );
   });
 
   Widget createWidgetUnderTest() {

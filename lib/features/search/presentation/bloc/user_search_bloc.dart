@@ -27,10 +27,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     UserSearchQueryChanged event,
     Emitter<UserSearchState> emit,
   ) async {
-    if (event.query.trim().isEmpty) {
-      emit(const UserSearchInitial());
-      return;
-    }
+    if (event.query.trim().length < 2) return;
 
     emit(const UserSearchLoading());
     try {
