@@ -74,13 +74,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
   }
 
+  /// Returns true when there is a route to pop — works with both GoRouter
+  /// (runtime) and plain Navigator (unit tests without a GoRouter ancestor).
+  bool _canPop(BuildContext context) {
+    try {
+      return GoRouter.of(context).canPop();
+    } catch (_) {
+      return Navigator.canPop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
         automaticallyImplyLeading: false,
-        leading: Navigator.canPop(context) ? const BackButton() : null,
+        leading: _canPop(context) ? const BackButton() : null,
       ),
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
