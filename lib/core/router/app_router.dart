@@ -9,11 +9,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/signup_screen.dart';
 import '../../features/navigation/presentation/screens/main_shell.dart';
+import '../../features/posts/domain/repositories/post_repository.dart';
+import '../../features/posts/presentation/bloc/create_post_bloc.dart';
+import '../../features/posts/presentation/screens/create_post_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 
@@ -87,6 +92,15 @@ GoRouter createRouter(AuthBloc authBloc) {
       GoRoute(
         path: '/edit-profile',
         builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/create-post',
+        builder: (context, state) => BlocProvider<CreatePostBloc>(
+          create: (ctx) => CreatePostBloc(
+            repository: ctx.read<PostRepository>(),
+          ),
+          child: const CreatePostScreen(),
+        ),
       ),
     ],
   );
