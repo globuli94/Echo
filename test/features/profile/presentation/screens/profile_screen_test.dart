@@ -22,6 +22,8 @@ import 'package:echo/features/search/presentation/bloc/user_search_bloc.dart';
 import 'package:echo/features/search/presentation/bloc/user_search_event.dart';
 import 'package:echo/features/search/presentation/bloc/user_search_state.dart';
 import 'package:echo/features/search/presentation/screens/search_screen.dart';
+import 'package:echo/features/follow/presentation/screens/followers_screen.dart';
+import 'package:echo/features/follow/presentation/screens/following_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -226,6 +228,136 @@ void main() {
       expect(find.byType(BackButton), findsNothing,
           reason:
               'Back button should NOT appear when ProfileScreen is a root route');
+    });
+
+    testWidgets(
+        'shows back button when ProfileScreen is pushed from followers list',
+        (WidgetTester tester) async {
+      // Build test app with followers and profile routes
+      final router = GoRouter(
+        initialLocation: '/followers',
+        routes: [
+          GoRoute(
+            path: '/followers',
+            builder: (ctx, state) => BlocProvider<FollowListBloc>.value(
+              value: mockFollowListBloc,
+              child: const FollowersScreen(profileUid: 'some-uid'),
+            ),
+          ),
+          GoRoute(
+            path: '/profile/:uid',
+            builder: (ctx, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+                BlocProvider<ProfileBloc>.value(value: mockProfileBloc),
+                BlocProvider<UserPostsBloc>.value(value: mockUserPostsBloc),
+                BlocProvider<FollowListBloc>.value(value: mockFollowListBloc),
+                BlocProvider<PostBloc>.value(value: mockPostBloc),
+              ],
+              child: ProfileScreen(uid: state.pathParameters['uid']!),
+            ),
+          ),
+        ],
+      );
+
+      // Stub followers with a list that includes our mock user
+      when(() => mockFollowListBloc.state).thenReturn(
+        FollowListLoaded(users: [mockUser]),
+      );
+      whenListen(
+        mockFollowListBloc,
+        Stream.fromIterable([FollowListLoaded(users: [mockUser])]),
+        initialState: FollowListLoaded(users: [mockUser]),
+      );
+
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pump();
+
+      // Verify we're on followers screen with the user
+      expect(find.text('Alice'), findsOneWidget,
+          reason: 'Follower should be visible in followers list');
+
+      // Tap the follower to navigate to profile
+      await tester.tap(find.text('Alice'));
+      // Pump with explicit duration for navigation animation
+      for (int i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      // Verify ProfileScreen is now visible
+      expect(find.byType(ProfileScreen), findsOneWidget,
+          reason:
+              'ProfileScreen should be displayed after tapping follower');
+
+      // Verify back button appears
+      expect(find.byType(BackButton), findsOneWidget,
+          reason:
+              'Back button should appear when navigated from followers list');
+    });
+
+    testWidgets(
+        'shows back button when ProfileScreen is pushed from following list',
+        (WidgetTester tester) async {
+      // Build test app with following and profile routes
+      final router = GoRouter(
+        initialLocation: '/following',
+        routes: [
+          GoRoute(
+            path: '/following',
+            builder: (ctx, state) => BlocProvider<FollowListBloc>.value(
+              value: mockFollowListBloc,
+              child: const FollowingScreen(profileUid: 'some-uid'),
+            ),
+          ),
+          GoRoute(
+            path: '/profile/:uid',
+            builder: (ctx, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+                BlocProvider<ProfileBloc>.value(value: mockProfileBloc),
+                BlocProvider<UserPostsBloc>.value(value: mockUserPostsBloc),
+                BlocProvider<FollowListBloc>.value(value: mockFollowListBloc),
+                BlocProvider<PostBloc>.value(value: mockPostBloc),
+              ],
+              child: ProfileScreen(uid: state.pathParameters['uid']!),
+            ),
+          ),
+        ],
+      );
+
+      // Stub following with a list that includes our mock user
+      when(() => mockFollowListBloc.state).thenReturn(
+        FollowListLoaded(users: [mockUser]),
+      );
+      whenListen(
+        mockFollowListBloc,
+        Stream.fromIterable([FollowListLoaded(users: [mockUser])]),
+        initialState: FollowListLoaded(users: [mockUser]),
+      );
+
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pump();
+
+      // Verify we're on following screen with the user
+      expect(find.text('Alice'), findsOneWidget,
+          reason: 'Following user should be visible in following list');
+
+      // Tap the following user to navigate to profile
+      await tester.tap(find.text('Alice'));
+      // Pump with explicit duration for navigation animation
+      for (int i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      // Verify ProfileScreen is now visible
+      expect(find.byType(ProfileScreen), findsOneWidget,
+          reason:
+              'ProfileScreen should be displayed after tapping following user');
+
+      // Verify back button appears
+      expect(find.byType(BackButton), findsOneWidget,
+          reason:
+              'Back button should appear when navigated from following list');
     });
   });
 }
