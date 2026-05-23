@@ -58,6 +58,16 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------
+    // Collection group rule for `following`
+    // Enables collection group queries (e.g. FollowersScreen: all users
+    // who follow a given user). The nested write rules below remain
+    // authoritative for create/delete.
+    // ---------------------------------------------------------------
+    match /{path=**}/following/{docId} {
+      allow read: if request.auth != null;
+    }
+
+    // ---------------------------------------------------------------
     // posts/{postId}
     // ---------------------------------------------------------------
     match /posts/{postId} {
