@@ -25,14 +25,16 @@
 | `createdAt` | timestamp | required | Server timestamp set when the document is first created |
 
 **Access patterns:**
-- Authenticated user reads own profile (`users/{uid}`, owner)
-- Authenticated user reads any other user's profile (`users/{uid}`, third party)
+- Authenticated user reads own profile (`users/{uid}`, owner) — single-document (get)
+- Authenticated user reads any other user's profile (`users/{uid}`, third party) — single-document (get)
+- Authenticated user lists user documents filtered by `displayName` prefix (user search) — multi-document (list); covered by `allow read: if request.auth != null`
 - Authenticated user creates own document on first sign-in (uid == auth.uid)
 - Authenticated user updates own profile fields (`displayName`, `bio`, `avatarUrl`)
 - Any authenticated user updates `followerCount` or `followingCount` on any user document (third-party field-scoped write, FieldValue.increment)
 
 **Query patterns:**
 - Filter `username == value` (no sort) — username search; no composite index required
+- Filter `displayName >= query` AND `displayName < query + '\uF8FF'`, sort by `displayName ASC` — displayName prefix search (user search screen); covered by Firestore's automatic single-field index on `displayName`; no explicit composite index entry required in `firestore.indexes.json`
 
 ---
 
@@ -130,3 +132,4 @@ iOS OAuth configuration:
 | 2026-05-23 | Safe | SOCAA-408: `imageUrl` optional field added to `posts` collection; `posts/{uid}/{postId}` Storage path added |
 | 2026-05-23 | Safe | SOCAA-417: `users/{uid}/following/{targetUid}` subcollection added with `followedAt` and `targetUid` fields; `users` update rule expanded to allow any authenticated user to increment `followerCount` or `followingCount`; composite index for `posts(authorId, createdAt)` confirmed present |
 | 2026-05-23 | Safe | SOCAA-420: Collection group read rule added for `following` (FollowersScreen); COLLECTION_GROUP index on `following.targetUid` added to `firestore.indexes.json`; access and query patterns updated in schema doc |
+| 2026-05-23 | Safe | SOCAA-424: `users` collection list access pattern added for `displayName` prefix search; query covered by Firestore automatic single-field index on `displayName` (no explicit composite index required); existing `allow read: if request.auth != null` rule confirmed to cover list operations |

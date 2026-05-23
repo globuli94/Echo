@@ -7,12 +7,14 @@ import 'package:flutter/material.dart';
 
 import '../../../feed/presentation/screens/feed_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
+import '../../../search/presentation/screens/search_screen.dart';
 
 /// The main app scaffold shown to authenticated users.
 ///
-/// Provides a two-tab bottom navigation bar (Feed · Profile) and preserves
-/// each tab's subtree via [IndexedStack].
+/// Provides a three-tab bottom navigation bar (Feed · Search · Profile) and
+/// preserves each tab's subtree via [IndexedStack].
 class MainShell extends StatefulWidget {
+  /// Creates a [MainShell].
   const MainShell({super.key});
 
   @override
@@ -24,6 +26,7 @@ class _MainShellState extends State<MainShell> {
 
   static const _screens = <Widget>[
     FeedScreen(),
+    SearchScreen(),
     ProfileScreen(),
   ];
 
@@ -41,6 +44,10 @@ class _MainShellState extends State<MainShell> {
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Feed',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: 'Search',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

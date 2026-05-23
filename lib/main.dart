@@ -24,6 +24,10 @@ import 'features/follow/data/datasources/follow_remote_data_source.dart';
 import 'features/follow/data/repositories/follow_repository_impl.dart';
 import 'features/follow/domain/repositories/follow_repository.dart';
 import 'features/posts/data/datasources/post_remote_data_source.dart';
+import 'features/search/data/datasources/user_search_remote_data_source.dart';
+import 'features/search/data/repositories/user_search_repository_impl.dart';
+import 'features/search/domain/repositories/user_search_repository.dart';
+import 'features/search/presentation/bloc/user_search_bloc.dart';
 import 'features/posts/data/repositories/post_repository_impl.dart';
 import 'features/posts/domain/repositories/post_repository.dart';
 import 'features/posts/presentation/bloc/post_bloc.dart';
@@ -73,6 +77,11 @@ Future<void> main() async {
   final followDataSource = FollowRemoteDataSourceImpl(firestore: firestore);
   final followRepository = FollowRepositoryImpl(dataSource: followDataSource);
 
+  final userSearchDataSource =
+      UserSearchRemoteDataSourceImpl(firestore: firestore);
+  final userSearchRepository =
+      UserSearchRepositoryImpl(dataSource: userSearchDataSource);
+
   final router = createRouter(authBloc);
 
   runApp(EchoApp(
@@ -81,6 +90,7 @@ Future<void> main() async {
     userProfileRepository: userProfileRepository,
     postRepository: postRepository,
     followRepository: followRepository,
+    userSearchRepository: userSearchRepository,
     router: router,
   ));
 }
@@ -97,6 +107,7 @@ class EchoApp extends StatelessWidget {
     required this.userProfileRepository,
     required this.postRepository,
     required this.followRepository,
+    required this.userSearchRepository,
     required this.router,
   });
 
@@ -115,6 +126,9 @@ class EchoApp extends StatelessWidget {
   /// The backing [FollowRepository] exposed to child widgets.
   final FollowRepository followRepository;
 
+  /// The backing [UserSearchRepository] exposed to child widgets.
+  final UserSearchRepository userSearchRepository;
+
   /// The [GoRouter] instance created from [createRouter].
   final GoRouter router;
 
@@ -127,6 +141,8 @@ class EchoApp extends StatelessWidget {
             value: userProfileRepository),
         RepositoryProvider<PostRepository>.value(value: postRepository),
         RepositoryProvider<FollowRepository>.value(value: followRepository),
+        RepositoryProvider<UserSearchRepository>.value(
+            value: userSearchRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -145,6 +161,11 @@ class EchoApp extends StatelessWidget {
           BlocProvider<UserPostsBloc>(
             create: (context) => UserPostsBloc(
               repository: context.read<PostRepository>(),
+            ),
+          ),
+          BlocProvider<UserSearchBloc>(
+            create: (context) => UserSearchBloc(
+              repository: context.read<UserSearchRepository>(),
             ),
           ),
         ],
