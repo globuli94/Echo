@@ -53,16 +53,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _loadProfile() {
-    final authState = context.read<AuthBloc>().state;
+    // Null-safe reads: BLoCs may be absent during unit tests.
+    final authState = context.read<AuthBloc?>()?.state;
     if (authState is! AuthAuthenticated) return;
     final viewerUid = authState.user.uid;
     final targetUid = widget.uid ?? viewerUid;
-    context.read<ProfileBloc>().add(
+    context.read<ProfileBloc?>()?.add(
           ProfileLoadRequested(uid: targetUid, viewerUid: viewerUid),
         );
     context
-        .read<UserPostsBloc>()
-        .add(UserPostsLoadRequested(authorId: targetUid));
+        .read<UserPostsBloc?>()
+        ?.add(UserPostsLoadRequested(authorId: targetUid));
   }
 
   Future<void> _pickAndUploadAvatar(String uid) async {
