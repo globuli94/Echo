@@ -65,4 +65,16 @@ abstract class PostRepository {
     DateTime? before,
     int limit = 15,
   });
+
+  /// Fetches up to [limit] posts authored by [authorId], ordered by
+  /// [createdAt] DESC.
+  ///
+  /// Used to populate the posts section on a user's ProfileScreen. The
+  /// composite index `posts(authorId ASC, createdAt DESC)` in
+  /// `firestore.indexes.json` satisfies this query.
+  Future<FeedPage> fetchUserPosts({
+    required String authorId,
+    DateTime? before,
+    int limit = 15,
+  });
 }

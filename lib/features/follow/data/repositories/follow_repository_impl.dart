@@ -53,4 +53,8 @@ class FollowRepositoryImpl implements FollowRepository {
   @override
   Future<List<String>> getFollowingUids({required String uid}) =>
       _dataSource.getFollowingUids(uid: uid);
+
+  @override
+  Future<List<String>> getFollowerUids({required String targetUid}) =>
+      _dataSource.getFollowerUids(targetUid: targetUid);
 }

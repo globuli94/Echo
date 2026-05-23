@@ -49,6 +49,14 @@ abstract class PostRemoteDataSource {
     DateTime? before,
     required int limit,
   });
+
+  /// Fetches up to [limit] raw post documents authored by [authorId],
+  /// ordered by `createdAt` DESC.
+  Future<List<Map<String, dynamic>>> fetchUserPosts({
+    required String authorId,
+    DateTime? before,
+    required int limit,
+  });
 }
 
 class PostRemoteDataSourceImpl implements PostRemoteDataSource {
@@ -160,6 +168,30 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
     Query<Map<String, dynamic>> query = _firestore
         .collection('posts')
         .where('authorId', whereIn: authorIds)
+        .orderBy('createdAt', descending: true);
+
+    if (before != null) {
+      query = query.where(
+        'createdAt',
+        isLessThan: Timestamp.fromDate(before),
+      );
+    }
+
+    final snapshot = await query.limit(limit).get();
+    return snapshot.docs
+        .map((doc) => {'id': doc.id, ...doc.data()})
+        .toList();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchUserPosts({
+    required String authorId,
+    DateTime? before,
+    required int limit,
+  }) async {
+    Query<Map<String, dynamic>> query = _firestore
+        .collection('posts')
+        .where('authorId', isEqualTo: authorId)
         .orderBy('createdAt', descending: true);
 
     if (before != null) {

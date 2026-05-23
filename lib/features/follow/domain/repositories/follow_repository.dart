@@ -42,4 +42,11 @@ abstract class FollowRepository {
 
   /// Returns all UIDs that [uid] currently follows.
   Future<List<String>> getFollowingUids({required String uid});
+
+  /// Returns the UIDs of all users who follow [targetUid].
+  ///
+  /// Performs a Firestore collection-group query on `following` filtered by
+  /// `targetUid == targetUid`. Requires the collection-group index deployed by
+  /// SOCAA-420.
+  Future<List<String>> getFollowerUids({required String targetUid});
 }

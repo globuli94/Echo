@@ -142,4 +142,27 @@ class PostRepositoryImpl implements PostRepository {
 
     return FeedPage(posts: posts, hasMore: hasMore, nextCursor: nextCursor);
   }
+
+  @override
+  Future<FeedPage> fetchUserPosts({
+    required String authorId,
+    DateTime? before,
+    int limit = 15,
+  }) async {
+    final docs = await _dataSource.fetchUserPosts(
+      authorId: authorId,
+      before: before,
+      limit: limit + 1,
+    );
+
+    final hasMore = docs.length > limit;
+    final pageDocs = hasMore ? docs.take(limit).toList() : docs;
+
+    final posts = await _docsToPostsWithAuthors(pageDocs);
+
+    final DateTime? nextCursor =
+        posts.isNotEmpty ? posts.last.post.createdAt : null;
+
+    return FeedPage(posts: posts, hasMore: hasMore, nextCursor: nextCursor);
+  }
 }

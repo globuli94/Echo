@@ -18,10 +18,14 @@ import '../../features/auth/presentation/screens/signup_screen.dart';
 import '../../features/follow/domain/repositories/follow_repository.dart';
 import '../../features/follow/presentation/bloc/follow_bloc.dart';
 import '../../features/follow/presentation/bloc/follow_event.dart';
+import '../../features/follow/presentation/bloc/follow_list_bloc.dart';
+import '../../features/follow/presentation/screens/followers_screen.dart';
+import '../../features/follow/presentation/screens/following_screen.dart';
 import '../../features/navigation/presentation/screens/main_shell.dart';
 import '../../features/posts/domain/repositories/post_repository.dart';
 import '../../features/posts/presentation/bloc/create_post_bloc.dart';
 import '../../features/posts/presentation/screens/create_post_screen.dart';
+import '../../features/profile/domain/repositories/user_profile_repository.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 
@@ -115,6 +119,32 @@ GoRouter createRouter(AuthBloc authBloc) {
           ),
           child: const CreatePostScreen(),
         ),
+      ),
+      GoRoute(
+        path: '/followers/:uid',
+        builder: (context, state) {
+          final uid = state.pathParameters['uid']!;
+          return BlocProvider<FollowListBloc>(
+            create: (ctx) => FollowListBloc(
+              followRepository: ctx.read<FollowRepository>(),
+              profileRepository: ctx.read<UserProfileRepository>(),
+            ),
+            child: FollowersScreen(profileUid: uid),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/following/:uid',
+        builder: (context, state) {
+          final uid = state.pathParameters['uid']!;
+          return BlocProvider<FollowListBloc>(
+            create: (ctx) => FollowListBloc(
+              followRepository: ctx.read<FollowRepository>(),
+              profileRepository: ctx.read<UserProfileRepository>(),
+            ),
+            child: FollowingScreen(profileUid: uid),
+          );
+        },
       ),
     ],
   );

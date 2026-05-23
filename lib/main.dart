@@ -27,6 +27,7 @@ import 'features/posts/data/datasources/post_remote_data_source.dart';
 import 'features/posts/data/repositories/post_repository_impl.dart';
 import 'features/posts/domain/repositories/post_repository.dart';
 import 'features/posts/presentation/bloc/post_bloc.dart';
+import 'features/posts/presentation/bloc/user_posts_bloc.dart';
 import 'features/profile/data/datasources/profile_remote_data_source.dart';
 import 'features/profile/data/repositories/user_profile_repository_impl.dart';
 import 'features/profile/domain/repositories/user_profile_repository.dart';
@@ -139,6 +140,11 @@ class EchoApp extends StatelessWidget {
             create: (context) => PostBloc(
               repository: context.read<PostRepository>(),
               followRepository: context.read<FollowRepository>(),
+            ),
+          ),
+          BlocProvider<UserPostsBloc>(
+            create: (context) => UserPostsBloc(
+              repository: context.read<PostRepository>(),
             ),
           ),
         ],

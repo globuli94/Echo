@@ -27,6 +27,10 @@ abstract class FollowRemoteDataSource {
   });
 
   Future<List<String>> getFollowingUids({required String uid});
+
+  /// Returns the UIDs of all users who follow [targetUid] via a Firestore
+  /// collection-group query on `following` where `targetUid == targetUid`.
+  Future<List<String>> getFollowerUids({required String targetUid});
 }
 
 class FollowRemoteDataSourceImpl implements FollowRemoteDataSource {
@@ -118,5 +122,18 @@ class FollowRemoteDataSourceImpl implements FollowRemoteDataSource {
         .collection('following')
         .get();
     return snapshot.docs.map((doc) => doc.id).toList();
+  }
+
+  @override
+  Future<List<String>> getFollowerUids({required String targetUid}) async {
+    final snapshot = await _firestore
+        .collectionGroup('following')
+        .where('targetUid', isEqualTo: targetUid)
+        .get();
+    // Each doc path is users/{followerUid}/following/{targetUid}.
+    // The followerUid is the grandparent document id.
+    return snapshot.docs
+        .map((doc) => doc.reference.parent.parent!.id)
+        .toList();
   }
 }
