@@ -15,6 +15,9 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/signup_screen.dart';
+import '../../features/follow/domain/repositories/follow_repository.dart';
+import '../../features/follow/presentation/bloc/follow_bloc.dart';
+import '../../features/follow/presentation/bloc/follow_event.dart';
 import '../../features/navigation/presentation/screens/main_shell.dart';
 import '../../features/posts/domain/repositories/post_repository.dart';
 import '../../features/posts/presentation/bloc/create_post_bloc.dart';
@@ -86,7 +89,18 @@ GoRouter createRouter(AuthBloc authBloc) {
         path: '/profile/:uid',
         builder: (context, state) {
           final uid = state.pathParameters['uid']!;
-          return ProfileScreen(uid: uid);
+          final authState = context.read<AuthBloc>().state;
+          final currentUid =
+              authState is AuthAuthenticated ? authState.user.uid : '';
+          return BlocProvider<FollowBloc>(
+            create: (ctx) => FollowBloc(
+              repository: ctx.read<FollowRepository>(),
+            )..add(FollowStatusSubscribed(
+                currentUid: currentUid,
+                targetUid: uid,
+              )),
+            child: ProfileScreen(uid: uid),
+          );
         },
       ),
       GoRoute(

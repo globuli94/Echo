@@ -12,14 +12,27 @@ sealed class PostEvent extends Equatable {
 }
 
 /// Triggers an initial fetch of the post feed (first page).
+///
+/// [currentUid] is used to build the followed-user feed: the feed shows posts
+/// from followed users plus the authenticated user's own posts.
 final class PostsFeedSubscribed extends PostEvent {
-  const PostsFeedSubscribed();
+  const PostsFeedSubscribed({this.currentUid = ''});
+
+  final String currentUid;
+
+  @override
+  List<Object?> get props => [currentUid];
 }
 
 /// Requests a full feed refresh, replacing all currently loaded posts with
 /// a fresh first page.
 final class PostsFeedRefreshed extends PostEvent {
-  const PostsFeedRefreshed();
+  const PostsFeedRefreshed({this.currentUid = ''});
+
+  final String currentUid;
+
+  @override
+  List<Object?> get props => [currentUid];
 }
 
 /// Requests loading the next page of posts when the user scrolls near the

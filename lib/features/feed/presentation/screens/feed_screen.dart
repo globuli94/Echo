@@ -30,7 +30,12 @@ class _FeedScreenState extends State<FeedScreen> {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     // Null-safe read: PostBloc may not be in the tree during unit tests.
-    context.read<PostBloc?>()?.add(const PostsFeedSubscribed());
+    final authState = context.read<AuthBloc?>()?.state;
+    final currentUserId =
+        authState is AuthAuthenticated ? authState.user.uid : '';
+    context
+        .read<PostBloc?>()
+        ?.add(PostsFeedSubscribed(currentUid: currentUserId));
   }
 
   @override
@@ -53,7 +58,10 @@ class _FeedScreenState extends State<FeedScreen> {
   Future<void> _onRefresh() async {
     final bloc = context.read<PostBloc?>();
     if (bloc == null) return;
-    bloc.add(const PostsFeedRefreshed());
+    final authState = context.read<AuthBloc?>()?.state;
+    final currentUserId =
+        authState is AuthAuthenticated ? authState.user.uid : '';
+    bloc.add(PostsFeedRefreshed(currentUid: currentUserId));
     await bloc.stream.firstWhere(
       (s) => s is PostsLoaded || s is PostsError,
     );

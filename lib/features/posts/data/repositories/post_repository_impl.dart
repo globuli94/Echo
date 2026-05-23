@@ -115,4 +115,31 @@ class PostRepositoryImpl implements PostRepository {
     await _dataSource.deletePost(postId);
     await _dataSource.deletePostImage(uid: authorId, postId: postId);
   }
+
+  @override
+  Future<FeedPage> fetchFollowedFeedPage({
+    required List<String> authorIds,
+    DateTime? before,
+    int limit = 15,
+  }) async {
+    if (authorIds.isEmpty) {
+      return const FeedPage(posts: [], hasMore: false);
+    }
+
+    final docs = await _dataSource.fetchFollowedFeedPage(
+      authorIds: authorIds,
+      before: before,
+      limit: limit + 1,
+    );
+
+    final hasMore = docs.length > limit;
+    final pageDocs = hasMore ? docs.take(limit).toList() : docs;
+
+    final posts = await _docsToPostsWithAuthors(pageDocs);
+
+    final DateTime? nextCursor =
+        posts.isNotEmpty ? posts.last.post.createdAt : null;
+
+    return FeedPage(posts: posts, hasMore: hasMore, nextCursor: nextCursor);
+  }
 }

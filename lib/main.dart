@@ -20,6 +20,9 @@ import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
+import 'features/follow/data/datasources/follow_remote_data_source.dart';
+import 'features/follow/data/repositories/follow_repository_impl.dart';
+import 'features/follow/domain/repositories/follow_repository.dart';
 import 'features/posts/data/datasources/post_remote_data_source.dart';
 import 'features/posts/data/repositories/post_repository_impl.dart';
 import 'features/posts/domain/repositories/post_repository.dart';
@@ -66,6 +69,9 @@ Future<void> main() async {
   );
   final postRepository = PostRepositoryImpl(dataSource: postDataSource);
 
+  final followDataSource = FollowRemoteDataSourceImpl(firestore: firestore);
+  final followRepository = FollowRepositoryImpl(dataSource: followDataSource);
+
   final router = createRouter(authBloc);
 
   runApp(EchoApp(
@@ -73,6 +79,7 @@ Future<void> main() async {
     authBloc: authBloc,
     userProfileRepository: userProfileRepository,
     postRepository: postRepository,
+    followRepository: followRepository,
     router: router,
   ));
 }
@@ -88,6 +95,7 @@ class EchoApp extends StatelessWidget {
     required this.authBloc,
     required this.userProfileRepository,
     required this.postRepository,
+    required this.followRepository,
     required this.router,
   });
 
@@ -103,6 +111,9 @@ class EchoApp extends StatelessWidget {
   /// The backing [PostRepository] exposed to child widgets.
   final PostRepository postRepository;
 
+  /// The backing [FollowRepository] exposed to child widgets.
+  final FollowRepository followRepository;
+
   /// The [GoRouter] instance created from [createRouter].
   final GoRouter router;
 
@@ -114,6 +125,7 @@ class EchoApp extends StatelessWidget {
         RepositoryProvider<UserProfileRepository>.value(
             value: userProfileRepository),
         RepositoryProvider<PostRepository>.value(value: postRepository),
+        RepositoryProvider<FollowRepository>.value(value: followRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -126,6 +138,7 @@ class EchoApp extends StatelessWidget {
           BlocProvider<PostBloc>(
             create: (context) => PostBloc(
               repository: context.read<PostRepository>(),
+              followRepository: context.read<FollowRepository>(),
             ),
           ),
         ],

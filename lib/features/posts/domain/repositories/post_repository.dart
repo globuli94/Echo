@@ -54,4 +54,15 @@ abstract class PostRepository {
     required String postId,
     required String authorId,
   });
+
+  /// Fetches a single page of up to [limit] posts ordered by [createdAt] DESC,
+  /// filtered to posts authored by [authorIds].
+  ///
+  /// Used for the followed-user feed. Pass [followingUids] + current user's UID
+  /// as [authorIds]. Firestore `in` queries support up to 30 values.
+  Future<FeedPage> fetchFollowedFeedPage({
+    required List<String> authorIds,
+    DateTime? before,
+    int limit = 15,
+  });
 }
