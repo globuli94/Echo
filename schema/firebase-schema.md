@@ -90,6 +90,57 @@
 
 ---
 
+### `conversations`
+
+**Path:** `conversations/{conversationId}`
+**Purpose:** Stores 1-to-1 direct message conversations between two users. The document ID is deterministic: sort the two participant UIDs lexicographically and join with an underscore (e.g. `uid-aaa_uid-zzz`), enabling an O(1) existence check without a query.
+**Owner:** Both participants identified in `participantIds`.
+
+| Field | Firestore Type | Required | Description |
+|---|---|---|---|
+| `conversationId` | string | required | Mirrors the document ID |
+| `participantIds` | array<string> | required | Exactly 2 UIDs sorted ascending |
+| `lastMessage` | string | optional | Preview text of the most recent message |
+| `lastMessageAt` | timestamp | optional | Timestamp of the most recent message |
+| `lastMessageSenderId` | string | optional | UID of the sender of the most recent message |
+| `unreadCounts` | map<string, number> | required | Map of uid → unread message count for that participant; e.g. `{"uid-a": 0, "uid-b": 3}` |
+| `createdAt` | timestamp | required | Server timestamp set on first creation |
+
+**Access patterns:**
+- Authenticated user reads all conversations they participate in (`participantIds array-contains auth.uid`) — list (query)
+- Authenticated user reads a single conversation by deterministic ID — single-document (get), participant only
+- Authenticated user creates a new conversation (auth.uid must be in participantIds; participantIds.size() == 2) — single write
+- Authenticated user updates `lastMessage`, `lastMessageAt`, `lastMessageSenderId`, `unreadCounts` on a conversation they participate in — field-scoped update
+- Authenticated user updates `unreadCounts[auth.uid]` to 0 when they open a conversation (mark as read) — field-scoped update (covered by the same unreadCounts update rule)
+
+**Query patterns:**
+- Filter `participantIds array-contains uid`, sort by `lastMessageAt DESC` — conversations list screen; **composite index required** (see `firestore.indexes.json`)
+
+---
+
+### `conversations/{conversationId}/messages`
+
+**Path:** `conversations/{conversationId}/messages/{messageId}`
+**Purpose:** Stores individual messages within a conversation. Document ID is Firestore auto-generated.
+**Owner:** Authenticated user whose UID matches the `senderId` field.
+
+| Field | Firestore Type | Required | Description |
+|---|---|---|---|
+| `messageId` | string | required | Mirrors the Firestore document ID |
+| `senderId` | string | required | Firebase Auth UID of the sender |
+| `content` | string | required | Text body of the message |
+| `createdAt` | timestamp | required | Server timestamp set when the message is created |
+
+**Access patterns:**
+- Authenticated user reads all messages in a conversation they participate in — list (subcollection query, sorted by `createdAt ASC`), real-time listener
+- Authenticated user creates a message in a conversation they participate in (senderId must equal auth.uid) — single write
+- Updates and deletes are not permitted via client SDK
+
+**Query patterns:**
+- No filter, sort by `createdAt ASC` — chat screen real-time listener; covered by Firestore's automatic single-field index on `createdAt`; no composite index required
+
+---
+
 ## Firebase Storage Paths
 
 | Path | Purpose | Owner | Access |
@@ -133,3 +184,4 @@ iOS OAuth configuration:
 | 2026-05-23 | Safe | SOCAA-417: `users/{uid}/following/{targetUid}` subcollection added with `followedAt` and `targetUid` fields; `users` update rule expanded to allow any authenticated user to increment `followerCount` or `followingCount`; composite index for `posts(authorId, createdAt)` confirmed present |
 | 2026-05-23 | Safe | SOCAA-420: Collection group read rule added for `following` (FollowersScreen); COLLECTION_GROUP index on `following.targetUid` added to `firestore.indexes.json`; access and query patterns updated in schema doc |
 | 2026-05-23 | Safe | SOCAA-424: `users` collection list access pattern added for `displayName` prefix search; query covered by Firestore automatic single-field index on `displayName` (no explicit composite index required); existing `allow read: if request.auth != null` rule confirmed to cover list operations |
+| 2026-05-24 | Safe | SOCAA-445: `conversations` top-level collection and `conversations/{conversationId}/messages` subcollection added for 1-to-1 real-time direct messaging; Firestore rules updated for participant-scoped access; composite index added for `conversations(participantIds, lastMessageAt)` |
