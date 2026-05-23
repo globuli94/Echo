@@ -34,7 +34,7 @@
 
 **Query patterns:**
 - Filter `username == value` (no sort) — username search; no composite index required
-- Filter `displayName >= query` AND `displayName < query + '\uF8FF'`, sort by `displayName ASC` — displayName prefix search (user search screen); covered by composite index on `users(displayName ASC)` in `firestore.indexes.json`
+- Filter `displayName >= query` AND `displayName < query + '\uF8FF'`, sort by `displayName ASC` — displayName prefix search (user search screen); covered by Firestore's automatic single-field index on `displayName`; no explicit composite index entry required in `firestore.indexes.json`
 
 ---
 
@@ -132,4 +132,4 @@ iOS OAuth configuration:
 | 2026-05-23 | Safe | SOCAA-408: `imageUrl` optional field added to `posts` collection; `posts/{uid}/{postId}` Storage path added |
 | 2026-05-23 | Safe | SOCAA-417: `users/{uid}/following/{targetUid}` subcollection added with `followedAt` and `targetUid` fields; `users` update rule expanded to allow any authenticated user to increment `followerCount` or `followingCount`; composite index for `posts(authorId, createdAt)` confirmed present |
 | 2026-05-23 | Safe | SOCAA-420: Collection group read rule added for `following` (FollowersScreen); COLLECTION_GROUP index on `following.targetUid` added to `firestore.indexes.json`; access and query patterns updated in schema doc |
-| 2026-05-23 | Safe | SOCAA-424: `users` collection list access pattern added for `displayName` prefix search; composite index on `users(displayName ASC)` added to `firestore.indexes.json`; existing `allow read: if request.auth != null` rule confirmed to cover list operations |
+| 2026-05-23 | Safe | SOCAA-424: `users` collection list access pattern added for `displayName` prefix search; query covered by Firestore automatic single-field index on `displayName` (no explicit composite index required); existing `allow read: if request.auth != null` rule confirmed to cover list operations |
