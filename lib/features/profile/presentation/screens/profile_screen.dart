@@ -53,16 +53,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _loadProfile() {
-    final authState = context.read<AuthBloc>().state;
+    // Null-safe reads: BLoCs may be absent during unit tests.
+    final authState = context.read<AuthBloc?>()?.state;
     if (authState is! AuthAuthenticated) return;
     final viewerUid = authState.user.uid;
     final targetUid = widget.uid ?? viewerUid;
-    context.read<ProfileBloc>().add(
+    context.read<ProfileBloc?>()?.add(
           ProfileLoadRequested(uid: targetUid, viewerUid: viewerUid),
         );
     context
-        .read<UserPostsBloc>()
-        .add(UserPostsLoadRequested(authorId: targetUid));
+        .read<UserPostsBloc?>()
+        ?.add(UserPostsLoadRequested(authorId: targetUid));
   }
 
   Future<void> _pickAndUploadAvatar(String uid) async {
@@ -74,13 +75,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
   }
 
+  /// Returns true when there is a route to pop — works with both GoRouter
+  /// (runtime) and plain Navigator (unit tests without a GoRouter ancestor).
+  bool _canPop(BuildContext context) {
+    try {
+      return GoRouter.of(context).canPop();
+    } catch (_) {
+      return Navigator.canPop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
         automaticallyImplyLeading: false,
-        leading: Navigator.canPop(context) ? const BackButton() : null,
+        leading: _canPop(context) ? const BackButton() : null,
       ),
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {

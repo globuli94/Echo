@@ -24,8 +24,10 @@ import '../../features/follow/presentation/screens/following_screen.dart';
 import '../../features/navigation/presentation/screens/main_shell.dart';
 import '../../features/posts/domain/repositories/post_repository.dart';
 import '../../features/posts/presentation/bloc/create_post_bloc.dart';
+import '../../features/posts/presentation/bloc/user_posts_bloc.dart';
 import '../../features/posts/presentation/screens/create_post_screen.dart';
 import '../../features/profile/domain/repositories/user_profile_repository.dart';
+import '../../features/profile/presentation/bloc/profile_bloc.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 
@@ -96,13 +98,27 @@ GoRouter createRouter(AuthBloc authBloc) {
           final authState = context.read<AuthBloc>().state;
           final currentUid =
               authState is AuthAuthenticated ? authState.user.uid : '';
-          return BlocProvider<FollowBloc>(
-            create: (ctx) => FollowBloc(
-              repository: ctx.read<FollowRepository>(),
-            )..add(FollowStatusSubscribed(
-                currentUid: currentUid,
-                targetUid: uid,
-              )),
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider<ProfileBloc>(
+                create: (ctx) => ProfileBloc(
+                  repository: ctx.read<UserProfileRepository>(),
+                ),
+              ),
+              BlocProvider<UserPostsBloc>(
+                create: (ctx) => UserPostsBloc(
+                  repository: ctx.read<PostRepository>(),
+                ),
+              ),
+              BlocProvider<FollowBloc>(
+                create: (ctx) => FollowBloc(
+                  repository: ctx.read<FollowRepository>(),
+                )..add(FollowStatusSubscribed(
+                    currentUid: currentUid,
+                    targetUid: uid,
+                  )),
+              ),
+            ],
             child: ProfileScreen(uid: uid),
           );
         },
