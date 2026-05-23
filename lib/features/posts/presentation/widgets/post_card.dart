@@ -12,9 +12,9 @@ import '../../domain/entities/post_with_author.dart';
 import '../../domain/repositories/post_repository.dart';
 import '../bloc/like_bloc.dart';
 import '../bloc/like_event.dart';
-import '../bloc/like_state.dart';
 import '../bloc/post_bloc.dart';
 import '../bloc/post_event.dart';
+import 'like_button.dart';
 
 class PostCard extends StatelessWidget {
   const PostCard({
@@ -121,7 +121,7 @@ class PostCard extends StatelessWidget {
                       currentUserId: currentUserId,
                       initialCount: post.likeCount,
                     )),
-              child: _LikeButton(
+              child: LikeButton(
                 postId: post.postId,
                 currentUserId: currentUserId,
               ),
@@ -129,73 +129,6 @@ class PostCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _LikeButton extends StatelessWidget {
-  const _LikeButton({
-    required this.postId,
-    required this.currentUserId,
-  });
-
-  final String postId;
-  final String currentUserId;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<LikeBloc, LikeState>(
-      builder: (context, state) {
-        if (state is LikeLoading || state is LikeInitial) {
-          return const Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ],
-          );
-        }
-
-        if (state is LikeLoaded) {
-          return Row(
-            children: [
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Icon(
-                  state.isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: state.isLiked
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                ),
-                onPressed: () {
-                  context.read<LikeBloc>().add(
-                        LikeToggleRequested(
-                          postId: postId,
-                          currentUserId: currentUserId,
-                          isCurrentlyLiked: state.isLiked,
-                          currentCount: state.likeCount,
-                        ),
-                      );
-                },
-              ),
-              const SizedBox(width: 4),
-              Text('${state.likeCount}'),
-            ],
-          );
-        }
-
-        // LikeError — show disabled heart
-        return const Row(
-          children: [
-            Icon(Icons.favorite_border),
-            SizedBox(width: 4),
-            Text('—'),
-          ],
-        );
-      },
     );
   }
 }
