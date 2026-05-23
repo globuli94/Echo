@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('ProfileScreen', () {
+  group('EditProfileScreen', () {
     testWidgets('renders with correct AppBar title',
         (WidgetTester tester) async {
       // This is a placeholder test that verifies the screen exists and renders
@@ -10,13 +10,13 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            appBar: AppBar(title: const Text('Profile')),
+            appBar: AppBar(title: const Text('Edit Profile')),
             body: const SizedBox.shrink(),
           ),
         ),
       );
 
-      expect(find.text('Profile'), findsWidgets);
+      expect(find.text('Edit Profile'), findsWidgets);
     });
   });
 }
