@@ -88,6 +88,7 @@ class _FeedScreenState extends State<FeedScreen> {
                         ? _EmptyFeedView(scrollController: _scrollController)
                         : ListView.builder(
                             controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
                             // Extra item for the bottom loading indicator.
                             itemCount: state.posts.length +
                                 (state.isLoadingMore ? 1 : 0),

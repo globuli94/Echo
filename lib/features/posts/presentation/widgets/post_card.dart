@@ -37,47 +37,48 @@ class PostCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                GestureDetector(
-                  onTap: () =>
-                      context.push('/profile/${post.authorId}'),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundImage: postWithAuthor.authorAvatarUrl != null
-                            ? CachedNetworkImageProvider(
-                                postWithAuthor.authorAvatarUrl!)
-                            : null,
-                        child: postWithAuthor.authorAvatarUrl == null
-                            ? Text(
-                                postWithAuthor.authorDisplayName.isNotEmpty
-                                    ? postWithAuthor.authorDisplayName[0]
-                                        .toUpperCase()
-                                    : '?',
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Flexible(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              postWithAuthor.authorDisplayName,
-                              style: Theme.of(context).textTheme.titleSmall,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              formattedDate,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () =>
+                        context.push('/profile/${post.authorId}'),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundImage: postWithAuthor.authorAvatarUrl != null
+                              ? CachedNetworkImageProvider(
+                                  postWithAuthor.authorAvatarUrl!)
+                              : null,
+                          child: postWithAuthor.authorAvatarUrl == null
+                              ? Text(
+                                  postWithAuthor.authorDisplayName.isNotEmpty
+                                      ? postWithAuthor.authorDisplayName[0]
+                                          .toUpperCase()
+                                      : '?',
+                                )
+                              : null,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                postWithAuthor.authorDisplayName,
+                                style: Theme.of(context).textTheme.titleSmall,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                formattedDate,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const Spacer(),
                 if (post.authorId == currentUserId)
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
