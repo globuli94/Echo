@@ -79,6 +79,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
       ),
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
