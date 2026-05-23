@@ -14,15 +14,47 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.auth.uid == uid;
 
-      // Only the owner may update their own profile, and only the
-      // allowed mutable fields (displayName, bio, avatarUrl).
+      // Updates are restricted:
+      //   - The owner may update their own mutable profile fields.
+      //   - Any authenticated user may increment followerCount or
+      //     followingCount (FieldValue.increment from follow/unfollow flow).
       allow update: if request.auth != null
-                    && request.auth.uid == uid
-                    && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['displayName', 'bio', 'avatarUrl']);
+                    && (
+                      // Owner profile-field update path
+                      (
+                        request.auth.uid == uid
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['displayName', 'bio', 'avatarUrl'])
+                      )
+                      ||
+                      // Third-party follower/following count update path
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['followerCount', 'followingCount'])
+                    );
 
       // Deletion of user documents is not permitted via the client SDK.
       allow delete: if false;
+
+      // ---------------------------------------------------------------
+      // users/{uid}/following/{targetUid}
+      // ---------------------------------------------------------------
+      match /following/{targetUid} {
+        // Any authenticated user may read a following document
+        // (e.g. to check if a follow relationship exists).
+        allow read: if request.auth != null;
+
+        // Only the follower (document parent uid == auth.uid) may
+        // create or delete their own follow documents.
+        allow create: if request.auth != null
+                      && request.auth.uid == uid
+                      && request.resource.data.targetUid == targetUid;
+
+        allow delete: if request.auth != null
+                      && request.auth.uid == uid;
+
+        // Updates to follow documents are not permitted.
+        allow update: if false;
+      }
     }
 
     // ---------------------------------------------------------------
