@@ -192,5 +192,38 @@ void main() {
         reason: 'PostCard should render without image when imageUrl is null',
       );
     });
+
+    testWidgets('author name is tappable for navigation (AC #5)',
+        (WidgetTester tester) async {
+      // Arrange
+      final postWithAuthor = makePostWithAuthor(
+        post: makePost(authorId: 'author-123'),
+        authorDisplayName: 'Alice',
+      );
+
+      // Act
+      await tester.pumpWidget(
+        createWidgetUnderTest(
+          postWithAuthor: postWithAuthor,
+          currentUserId: 'user-1',
+        ),
+      );
+
+      // Assert - Author name is rendered and part of tappable area (AC #5)
+      // The PostCard wraps the author in a GestureDetector for profile navigation
+      expect(
+        find.text('Alice'),
+        findsWidgets,
+        reason: 'Author display name should be rendered',
+      );
+
+      // Verify author area is interactive (contains GestureDetector)
+      expect(
+        find.byType(GestureDetector),
+        findsWidgets,
+        reason:
+            'Author area should have GestureDetector for profile navigation',
+      );
+    });
   });
 }

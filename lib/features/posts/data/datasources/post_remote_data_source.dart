@@ -11,6 +11,15 @@ import 'package:firebase_storage/firebase_storage.dart';
 abstract class PostRemoteDataSource {
   Stream<List<Map<String, dynamic>>> streamFeed();
 
+  /// Fetches up to [limit] raw post documents ordered by `createdAt` DESC.
+  ///
+  /// If [before] is provided, only posts with `createdAt` strictly less than
+  /// [before] are returned, enabling cursor-based pagination.
+  Future<List<Map<String, dynamic>>> fetchFeedPage({
+    DateTime? before,
+    required int limit,
+  });
+
   Future<void> createPost({
     required String postId,
     required String authorId,
@@ -52,6 +61,28 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchFeedPage({
+    DateTime? before,
+    required int limit,
+  }) async {
+    Query<Map<String, dynamic>> query = _firestore
+        .collection('posts')
+        .orderBy('createdAt', descending: true);
+
+    if (before != null) {
+      query = query.where(
+        'createdAt',
+        isLessThan: Timestamp.fromDate(before),
+      );
+    }
+
+    final snapshot = await query.limit(limit).get();
+    return snapshot.docs
+        .map((doc) => {'id': doc.id, ...doc.data()})
+        .toList();
   }
 
   @override
