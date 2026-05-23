@@ -18,7 +18,6 @@ class MockGoRouter extends Mock implements GoRouter {}
 void main() {
   group('FollowersScreen', () {
     late MockFollowListBloc mockFollowListBloc;
-    late MockGoRouter mockRouter;
 
     const profileUid = 'user123';
     final testFollowers = [
@@ -40,7 +39,6 @@ void main() {
 
     setUp(() {
       mockFollowListBloc = MockFollowListBloc();
-      mockRouter = MockGoRouter();
 
       when(() => mockFollowListBloc.state).thenReturn(
         FollowListLoaded(users: testFollowers),
