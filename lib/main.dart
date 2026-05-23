@@ -1,122 +1,160 @@
+// lib/main.dart
+//
+// Application entry point. Initialises Firebase, wires up repositories and
+// BLoCs, and mounts the root widget.
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+import 'package:go_router/go_router.dart';
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
+import 'features/auth/data/datasources/auth_remote_data_source.dart';
+import 'features/auth/data/repositories/auth_repository_impl.dart';
+import 'features/auth/domain/repositories/auth_repository.dart';
+import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/auth/presentation/bloc/auth_event.dart';
+import 'features/follow/data/datasources/follow_remote_data_source.dart';
+import 'features/follow/data/repositories/follow_repository_impl.dart';
+import 'features/follow/domain/repositories/follow_repository.dart';
+import 'features/posts/data/datasources/post_remote_data_source.dart';
+import 'features/posts/data/repositories/post_repository_impl.dart';
+import 'features/posts/domain/repositories/post_repository.dart';
+import 'features/posts/presentation/bloc/post_bloc.dart';
+import 'features/posts/presentation/bloc/user_posts_bloc.dart';
+import 'features/profile/data/datasources/profile_remote_data_source.dart';
+import 'features/profile/data/repositories/user_profile_repository_impl.dart';
+import 'features/profile/domain/repositories/user_profile_repository.dart';
+import 'features/profile/presentation/bloc/profile_bloc.dart';
+import 'firebase_options.dart';
 
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+/// Initialises Firebase and runs the app.
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
     );
+  } catch (_) {
+    // Firebase already initialised on the native side (e.g. hot restart).
   }
+
+  final firestore = FirebaseFirestore.instance;
+  final storage = FirebaseStorage.instance;
+
+  final dataSource = AuthRemoteDataSourceImpl(
+    firebaseAuth: FirebaseAuth.instance,
+    googleSignIn: GoogleSignIn(),
+    firestore: firestore,
+  );
+  final authRepository = AuthRepositoryImpl(dataSource: dataSource);
+  final authBloc = AuthBloc(repository: authRepository)
+    ..add(const AuthStarted());
+
+  final profileDataSource = ProfileRemoteDataSourceImpl(
+    firestore: firestore,
+    storage: storage,
+  );
+  final userProfileRepository =
+      UserProfileRepositoryImpl(dataSource: profileDataSource);
+
+  final postDataSource = PostRemoteDataSourceImpl(
+    firestore: firestore,
+    storage: storage,
+  );
+  final postRepository = PostRepositoryImpl(dataSource: postDataSource);
+
+  final followDataSource = FollowRemoteDataSourceImpl(firestore: firestore);
+  final followRepository = FollowRepositoryImpl(dataSource: followDataSource);
+
+  final router = createRouter(authBloc);
+
+  runApp(EchoApp(
+    authRepository: authRepository,
+    authBloc: authBloc,
+    userProfileRepository: userProfileRepository,
+    postRepository: postRepository,
+    followRepository: followRepository,
+    router: router,
+  ));
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+/// Root widget of the Echo application.
+///
+/// Wires the [AuthRepository] and [AuthBloc] into the widget tree so all
+/// descendant screens can access them via [context.read].
+class EchoApp extends StatelessWidget {
+  const EchoApp({
+    super.key,
+    required this.authRepository,
+    required this.authBloc,
+    required this.userProfileRepository,
+    required this.postRepository,
+    required this.followRepository,
+    required this.router,
+  });
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
+  /// The backing [AuthRepository] exposed to child widgets.
+  final AuthRepository authRepository;
 
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+  /// The global [AuthBloc] managing authentication state.
+  final AuthBloc authBloc;
 
-  final String title;
+  /// The backing [UserProfileRepository] exposed to child widgets.
+  final UserProfileRepository userProfileRepository;
 
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
+  /// The backing [PostRepository] exposed to child widgets.
+  final PostRepository postRepository;
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  /// The backing [FollowRepository] exposed to child widgets.
+  final FollowRepository followRepository;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  /// The [GoRouter] instance created from [createRouter].
+  final GoRouter router;
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<AuthRepository>.value(value: authRepository),
+        RepositoryProvider<UserProfileRepository>.value(
+            value: userProfileRepository),
+        RepositoryProvider<PostRepository>.value(value: postRepository),
+        RepositoryProvider<FollowRepository>.value(value: followRepository),
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: authBloc),
+          BlocProvider<ProfileBloc>(
+            create: (context) => ProfileBloc(
+              repository: context.read<UserProfileRepository>(),
             ),
-          ],
+          ),
+          BlocProvider<PostBloc>(
+            create: (context) => PostBloc(
+              repository: context.read<PostRepository>(),
+              followRepository: context.read<FollowRepository>(),
+            ),
+          ),
+          BlocProvider<UserPostsBloc>(
+            create: (context) => UserPostsBloc(
+              repository: context.read<PostRepository>(),
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          title: 'Echo',
+          theme: AppTheme.dark,
+          routerConfig: router,
+          debugShowCheckedModeBanner: false,
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }

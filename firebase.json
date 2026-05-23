@@ -5,5 +5,34 @@
   },
   "storage": {
     "rules": "schema/storage.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "ios": {
+        "default": {
+          "projectId": "echo-9cf94",
+          "appId": "1:608728058117:ios:ed1b7a683336a0e9d98f6c",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "echo-9cf94",
+          "appId": "1:608728058117:ios:ed1b7a683336a0e9d98f6c",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "echo-9cf94",
+          "configurations": {
+            "ios": "1:608728058117:ios:ed1b7a683336a0e9d98f6c",
+            "macos": "1:608728058117:ios:ed1b7a683336a0e9d98f6c"
+          }
+        }
+      }
+    }
   }
 }
