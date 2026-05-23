@@ -55,7 +55,9 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<AuthUser> signInWithGoogle() async {
     final credential = await _dataSource.signInWithGoogle();
-    return _fromCredential(credential);
+    final user = _fromCredential(credential);
+    await ensureUserDocument(user: user);
+    return user;
   }
 
   @override
@@ -71,6 +73,25 @@ class AuthRepositoryImpl implements AuthRepository {
     return _dataSource.createUserDocument(
       uid: user.uid,
       data: {
+        'uid': user.uid,
+        'displayName': user.displayName ?? emailPrefix,
+        'username': emailPrefix,
+        'bio': '',
+        'avatarUrl': null,
+        'followerCount': 0,
+        'followingCount': 0,
+        'postCount': 0,
+        'createdAt': FieldValue.serverTimestamp(),
+      },
+    );
+  }
+
+  @override
+  Future<void> ensureUserDocument({required AuthUser user}) {
+    final emailPrefix = user.email?.split('@').first ?? '';
+    return _dataSource.ensureUserDocument(
+      uid: user.uid,
+      defaultData: {
         'uid': user.uid,
         'displayName': user.displayName ?? emailPrefix,
         'username': emailPrefix,

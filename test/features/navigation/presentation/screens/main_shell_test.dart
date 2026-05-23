@@ -1,13 +1,50 @@
 // SPDX-License-Identifier: MIT
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:echo/features/auth/domain/entities/auth_user.dart';
+import 'package:echo/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:echo/features/auth/presentation/bloc/auth_state.dart';
 import 'package:echo/features/navigation/presentation/screens/main_shell.dart';
+import 'package:echo/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:echo/features/profile/presentation/bloc/profile_state.dart';
+
+class MockAuthBloc extends Mock implements AuthBloc {}
+
+class MockProfileBloc extends Mock implements ProfileBloc {}
 
 void main() {
   group('MainShell', () {
+    late MockAuthBloc mockAuthBloc;
+    late MockProfileBloc mockProfileBloc;
+
+    setUp(() {
+      mockAuthBloc = MockAuthBloc();
+      mockProfileBloc = MockProfileBloc();
+
+      // Stub AuthBloc state
+      when(() => mockAuthBloc.state).thenReturn(
+        const AuthAuthenticated(
+          user: AuthUser(uid: 'test-uid', email: 'test@example.com'),
+        ),
+      );
+      when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
+
+      // Stub ProfileBloc state
+      when(() => mockProfileBloc.state).thenReturn(const ProfileInitial());
+      when(() => mockProfileBloc.stream).thenAnswer((_) => const Stream.empty());
+    });
+
     Widget createWidgetUnderTest() {
-      return const MaterialApp(
-        home: MainShell(),
+      return MaterialApp(
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+            BlocProvider<ProfileBloc>.value(value: mockProfileBloc),
+          ],
+          child: const MainShell(),
+        ),
       );
     }
 

@@ -159,6 +159,11 @@ void main() {
           data: any(named: 'data'),
         )).thenAnswer((_) async {});
 
+        when(() => mockAuthRemoteDataSource.ensureUserDocument(
+          uid: any(named: 'uid'),
+          defaultData: any(named: 'defaultData'),
+        )).thenAnswer((_) async {});
+
         // Act
         final result = await authRepository.signInWithGoogle();
 

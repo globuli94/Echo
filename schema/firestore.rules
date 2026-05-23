@@ -14,9 +14,12 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.auth.uid == uid;
 
-      // Only the owner may update their own profile.
+      // Only the owner may update their own profile, and only the
+      // allowed mutable fields (displayName, bio, avatarUrl).
       allow update: if request.auth != null
-                    && request.auth.uid == uid;
+                    && request.auth.uid == uid
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['displayName', 'bio', 'avatarUrl']);
 
       // Deletion of user documents is not permitted via the client SDK.
       allow delete: if false;

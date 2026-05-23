@@ -41,6 +41,12 @@ abstract class AuthRemoteDataSource {
     required String uid,
     required Map<String, dynamic> data,
   });
+
+  /// Creates `users/{uid}` only when the document does not already exist.
+  Future<void> ensureUserDocument({
+    required String uid,
+    required Map<String, dynamic> defaultData,
+  });
 }
 
 /// Firebase-backed implementation of [AuthRemoteDataSource].
@@ -111,4 +117,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required Map<String, dynamic> data,
   }) =>
       _firestore.collection('users').doc(uid).set(data);
+
+  @override
+  Future<void> ensureUserDocument({
+    required String uid,
+    required Map<String, dynamic> defaultData,
+  }) async {
+    final snapshot = await _firestore.collection('users').doc(uid).get();
+    if (!snapshot.exists) {
+      await _firestore.collection('users').doc(uid).set(defaultData);
+    }
+  }
 }

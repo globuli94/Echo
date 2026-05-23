@@ -62,6 +62,14 @@
 
 ---
 
+## Firebase Storage Paths
+
+| Path | Purpose | Owner | Access |
+|---|---|---|---|
+| `avatars/{userId}` | Avatar image for the user at `userId` | Authenticated user whose UID matches `userId` | Owner can write (upload/overwrite); any authenticated user can read |
+
+---
+
 ## Firebase Services
 
 | Service | Purpose |
@@ -91,3 +99,4 @@ iOS OAuth configuration:
 |---|---|---|
 | 2026-05-22 | Safe | Initial schema — `users` and `posts` collections created |
 | 2026-05-23 | Safe | Firebase Authentication enabled — Email/Password and Google Sign-In providers; iOS OAuth settings configured |
+| 2026-05-23 | Safe | SOCAA-402: Storage Paths section added documenting `avatars/{userId}`; `firestore.rules` update rule for `users` scoped to allowed fields (`displayName`, `bio`, `avatarUrl`) |
