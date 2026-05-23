@@ -135,7 +135,7 @@ class _SearchScreenState extends State<SearchScreen> {
           return UserSearchResultCard(
             user: user,
             currentUid: currentUid,
-            onTap: () => context.go('/profile/${user.uid}'),
+            onTap: () => context.push('/profile/${user.uid}'),
           );
         },
       );
