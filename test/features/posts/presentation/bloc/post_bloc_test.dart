@@ -10,6 +10,24 @@ import 'package:echo/features/posts/presentation/bloc/post_bloc.dart';
 import 'package:echo/features/posts/presentation/bloc/post_event.dart';
 import 'package:echo/features/posts/presentation/bloc/post_state.dart';
 
+// Register fallback values for mocktail
+class FakeFeedPage extends Fake implements FeedPage {
+  FakeFeedPage({
+    this.posts = const [],
+    this.hasMore = false,
+    this.nextCursor,
+  });
+
+  @override
+  final List<PostWithAuthor> posts;
+
+  @override
+  final bool hasMore;
+
+  @override
+  final DateTime? nextCursor;
+}
+
 class MockPostRepository extends Mock implements PostRepository {}
 
 Post makePost({
@@ -40,6 +58,10 @@ PostWithAuthor makePostWithAuthor({
     );
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(FakeFeedPage());
+  });
+
   group('PostBloc', () {
     late MockPostRepository mockPostRepository;
     late PostBloc postBloc;
@@ -60,27 +82,21 @@ void main() {
     });
 
     group('PostsFeedSubscribed', () {
-      late StreamController<List<PostWithAuthor>> controller;
-
-      setUp(() {
-        controller = StreamController<List<PostWithAuthor>>();
-      });
-
-      tearDown(() {
-        controller.close();
-      });
-
       blocTest<PostBloc, PostState>(
-        'emits [PostsLoading, PostsLoaded] when stream emits',
+        'emits [PostsLoading, PostsLoaded] when fetchFeedPage succeeds',
         setUp: () {
-          when(() => mockPostRepository.streamFeed())
-              .thenAnswer((_) => controller.stream);
+          final posts = [makePostWithAuthor()];
+          when(() => mockPostRepository.fetchFeedPage(
+                before: any(named: 'before'),
+                limit: any(named: 'limit'),
+              )).thenAnswer((_) async => FeedPage(
+                posts: posts,
+                hasMore: false,
+                nextCursor: null,
+              ));
         },
         build: () => postBloc,
-        act: (bloc) {
-          bloc.add(const PostsFeedSubscribed());
-          controller.add([makePostWithAuthor()]);
-        },
+        act: (bloc) => bloc.add(const PostsFeedSubscribed()),
         expect: () => [
           isA<PostsLoading>(),
           isA<PostsLoaded>(),
@@ -88,16 +104,15 @@ void main() {
       );
 
       blocTest<PostBloc, PostState>(
-        'emits PostsError when stream errors',
+        'emits PostsError when fetchFeedPage fails',
         setUp: () {
-          when(() => mockPostRepository.streamFeed())
-              .thenAnswer((_) => controller.stream);
+          when(() => mockPostRepository.fetchFeedPage(
+                before: any(named: 'before'),
+                limit: any(named: 'limit'),
+              )).thenThrow(Exception('Network error'));
         },
         build: () => postBloc,
-        act: (bloc) {
-          bloc.add(const PostsFeedSubscribed());
-          controller.addError(Exception('Stream error'));
-        },
+        act: (bloc) => bloc.add(const PostsFeedSubscribed()),
         expect: () => [
           isA<PostsLoading>(),
           isA<PostsError>(),
