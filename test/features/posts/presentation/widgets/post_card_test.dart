@@ -3,13 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc_test/bloc_test.dart';
 import 'package:echo/features/posts/domain/entities/post.dart';
 import 'package:echo/features/posts/domain/entities/post_with_author.dart';
 import 'package:echo/features/posts/domain/repositories/post_repository.dart';
 import 'package:echo/features/posts/presentation/bloc/post_bloc.dart';
+import 'package:echo/features/posts/presentation/bloc/post_event.dart';
+import 'package:echo/features/posts/presentation/bloc/post_state.dart';
 import 'package:echo/features/posts/presentation/widgets/post_card.dart';
 
 class MockPostRepository extends Mock implements PostRepository {}
+
+class MockPostBloc extends MockBloc<PostEvent, PostState> implements PostBloc {}
 
 Post makePost({
   String postId = 'post-1',
@@ -40,10 +45,18 @@ PostWithAuthor makePostWithAuthor({
 
 void main() {
   group('PostCard', () {
-    late MockPostRepository mockPostRepository;
+    late MockPostBloc mockPostBloc;
 
     setUp(() {
-      mockPostRepository = MockPostRepository();
+      mockPostBloc = MockPostBloc();
+
+      // Default mock state
+      when(() => mockPostBloc.state).thenReturn(const PostsInitial());
+      whenListen(
+        mockPostBloc,
+        Stream.fromIterable([const PostsInitial()]),
+        initialState: const PostsInitial(),
+      );
     });
 
     Widget createWidgetUnderTest({
@@ -52,8 +65,8 @@ void main() {
     }) {
       return MaterialApp(
         home: Scaffold(
-          body: BlocProvider<PostBloc>(
-            create: (context) => PostBloc(repository: mockPostRepository),
+          body: BlocProvider<PostBloc>.value(
+            value: mockPostBloc,
             child: PostCard(
               postWithAuthor: postWithAuthor,
               currentUserId: currentUserId,

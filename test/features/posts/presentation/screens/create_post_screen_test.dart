@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc_test/bloc_test.dart';
 import 'package:echo/features/auth/domain/repositories/auth_repository.dart';
 import 'package:echo/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:echo/features/auth/presentation/bloc/auth_event.dart';
+import 'package:echo/features/auth/presentation/bloc/auth_state.dart';
 import 'package:echo/features/posts/domain/repositories/post_repository.dart';
 import 'package:echo/features/posts/presentation/bloc/create_post_bloc.dart';
+import 'package:echo/features/posts/presentation/bloc/create_post_event.dart';
 import 'package:echo/features/posts/presentation/bloc/create_post_state.dart';
 import 'package:echo/features/posts/presentation/screens/create_post_screen.dart';
 
@@ -14,26 +18,43 @@ class MockPostRepository extends Mock implements PostRepository {}
 
 class MockAuthRepository extends Mock implements AuthRepository {}
 
+class MockCreatePostBloc extends MockBloc<CreatePostEvent, CreatePostState> implements CreatePostBloc {}
+
+class MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
+
 void main() {
   group('CreatePostScreen', () {
-    late MockPostRepository mockPostRepository;
-    late MockAuthRepository mockAuthRepository;
+    late MockCreatePostBloc mockCreatePostBloc;
+    late MockAuthBloc mockAuthBloc;
 
     setUp(() {
-      mockPostRepository = MockPostRepository();
-      mockAuthRepository = MockAuthRepository();
+      mockCreatePostBloc = MockCreatePostBloc();
+      mockAuthBloc = MockAuthBloc();
+
+      // Default mock states
+      when(() => mockCreatePostBloc.state).thenReturn(
+        const CreatePostInitial(),
+      );
+      whenListen(
+        mockCreatePostBloc,
+        Stream.fromIterable([const CreatePostInitial()]),
+        initialState: const CreatePostInitial(),
+      );
+
+      when(() => mockAuthBloc.state).thenReturn(const AuthInitial());
+      whenListen(
+        mockAuthBloc,
+        Stream.fromIterable([const AuthInitial()]),
+        initialState: const AuthInitial(),
+      );
     });
 
     Widget createWidgetUnderTest() {
       return MaterialApp(
         home: MultiBlocProvider(
           providers: [
-            BlocProvider<CreatePostBloc>(
-              create: (context) => CreatePostBloc(repository: mockPostRepository),
-            ),
-            BlocProvider<AuthBloc>(
-              create: (context) => AuthBloc(repository: mockAuthRepository),
-            ),
+            BlocProvider<CreatePostBloc>.value(value: mockCreatePostBloc),
+            BlocProvider<AuthBloc>.value(value: mockAuthBloc),
           ],
           child: const CreatePostScreen(),
         ),
@@ -91,24 +112,37 @@ void main() {
     testWidgets('shows SnackBar on CreatePostFailure',
         (WidgetTester tester) async {
       // Arrange
-      final createPostBloc = CreatePostBloc(repository: mockPostRepository);
+      final mockCreatePostBloc = MockCreatePostBloc();
+      final mockAuthBloc = MockAuthBloc();
 
+      when(() => mockCreatePostBloc.state).thenReturn(
+        const CreatePostFailure(message: 'Failed to create post'),
+      );
+      whenListen(
+        mockCreatePostBloc,
+        Stream.fromIterable([
+          const CreatePostFailure(message: 'Failed to create post'),
+        ]),
+        initialState: const CreatePostFailure(message: 'Failed to create post'),
+      );
+
+      when(() => mockAuthBloc.state).thenReturn(const AuthInitial());
+      whenListen(
+        mockAuthBloc,
+        Stream.fromIterable([const AuthInitial()]),
+        initialState: const AuthInitial(),
+      );
+
+      // Act
       await tester.pumpWidget(MaterialApp(
         home: MultiBlocProvider(
           providers: [
-            BlocProvider<CreatePostBloc>.value(value: createPostBloc),
-            BlocProvider<AuthBloc>(
-              create: (context) => AuthBloc(repository: mockAuthRepository),
-            ),
+            BlocProvider<CreatePostBloc>.value(value: mockCreatePostBloc),
+            BlocProvider<AuthBloc>.value(value: mockAuthBloc),
           ],
           child: const CreatePostScreen(),
         ),
       ));
-
-      // Act - emit failure state
-      createPostBloc.emit(
-        const CreatePostFailure(message: 'Failed to create post'),
-      );
       await tester.pumpAndSettle();
 
       // Assert
@@ -117,8 +151,6 @@ void main() {
         findsWidgets,
         reason: 'SnackBar should be shown on CreatePostFailure',
       );
-
-      addTearDown(createPostBloc.close);
     });
   });
 }
