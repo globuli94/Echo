@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../chat/data/chat_repository.dart';
 import '../../../follow/presentation/bloc/follow_bloc.dart';
 import '../../../follow/presentation/bloc/follow_event.dart';
 import '../../../follow/presentation/bloc/follow_state.dart';
@@ -203,6 +204,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ] else ...[
                             const SizedBox(height: 24),
                             _FollowButton(profile: profile),
+                            const SizedBox(height: 8),
+                            _MessageButton(
+                              currentUid: currentUserId,
+                              profileUid: profile.uid,
+                            ),
                           ],
                           const SizedBox(height: 24),
                           Align(
@@ -445,6 +451,34 @@ class _FollowButton extends StatelessWidget {
               ),
           child: const Text('Follow'),
         );
+      },
+    );
+  }
+}
+
+class _MessageButton extends StatelessWidget {
+  const _MessageButton({
+    required this.currentUid,
+    required this.profileUid,
+  });
+
+  final String currentUid;
+  final String profileUid;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      icon: const Icon(Icons.chat_bubble_outline),
+      label: const Text('Message'),
+      onPressed: () async {
+        final chatRepository = context.read<ChatRepository>();
+        final conversationId = await chatRepository.getOrCreateConversation(
+          currentUid,
+          profileUid,
+        );
+        if (context.mounted) {
+          context.push('/chat/$conversationId', extra: profileUid);
+        }
       },
     );
   }

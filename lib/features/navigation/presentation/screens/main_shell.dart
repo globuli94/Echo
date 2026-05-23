@@ -4,15 +4,20 @@
 // Uses IndexedStack to preserve each tab's widget subtree across switches.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../chat/bloc/conversations/conversations_bloc.dart';
+import '../../../chat/screens/conversations_screen.dart';
 import '../../../feed/presentation/screens/feed_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../../../search/presentation/screens/search_screen.dart';
 
 /// The main app scaffold shown to authenticated users.
 ///
-/// Provides a three-tab bottom navigation bar (Feed · Search · Profile) and
-/// preserves each tab's subtree via [IndexedStack].
+/// Provides a four-tab bottom navigation bar (Feed · Search · Chat · Profile)
+/// and preserves each tab's subtree via [IndexedStack].
 class MainShell extends StatefulWidget {
   /// Creates a [MainShell].
   const MainShell({super.key});
@@ -27,33 +32,72 @@ class _MainShellState extends State<MainShell> {
   static const _screens = <Widget>[
     FeedScreen(),
     SearchScreen(),
+    ConversationsScreen(),
     ProfileScreen(),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Kick off the conversations stream as soon as the shell mounts so that
+    // the unread badge in the nav bar stays up to date.
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      context.read<ConversationsBloc>().add(
+            ConversationsSubscriptionRequested(uid: authState.user.uid),
+          );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    final currentUid =
+        authState is AuthAuthenticated ? authState.user.uid : '';
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Feed',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+      bottomNavigationBar: BlocBuilder<ConversationsBloc, ConversationsState>(
+        builder: (context, convState) {
+          int totalUnread = 0;
+          if (convState is ConversationsLoaded) {
+            for (final c in convState.conversations) {
+              totalUnread += c.unreadCounts[currentUid] ?? 0;
+            }
+          }
+
+          return BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) => setState(() => _currentIndex = index),
+            type: BottomNavigationBarType.fixed,
+            items: [
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.home),
+                label: 'Feed',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.search),
+                label: 'Search',
+              ),
+              BottomNavigationBarItem(
+                icon: totalUnread > 0
+                    ? Badge.count(
+                        count: totalUnread,
+                        child: const Icon(Icons.chat_bubble_outline),
+                      )
+                    : const Icon(Icons.chat_bubble_outline),
+                label: 'Chat',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
+          );
+        },
       ),
     );
   }

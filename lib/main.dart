@@ -20,6 +20,8 @@ import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
+import 'features/chat/bloc/conversations/conversations_bloc.dart';
+import 'features/chat/data/chat_repository.dart';
 import 'features/follow/data/datasources/follow_remote_data_source.dart';
 import 'features/follow/data/repositories/follow_repository_impl.dart';
 import 'features/follow/domain/repositories/follow_repository.dart';
@@ -82,6 +84,8 @@ Future<void> main() async {
   final userSearchRepository =
       UserSearchRepositoryImpl(dataSource: userSearchDataSource);
 
+  final chatRepository = ChatRepository(firestore: firestore);
+
   final router = createRouter(authBloc);
 
   runApp(EchoApp(
@@ -91,6 +95,7 @@ Future<void> main() async {
     postRepository: postRepository,
     followRepository: followRepository,
     userSearchRepository: userSearchRepository,
+    chatRepository: chatRepository,
     router: router,
   ));
 }
@@ -108,6 +113,7 @@ class EchoApp extends StatelessWidget {
     required this.postRepository,
     required this.followRepository,
     required this.userSearchRepository,
+    required this.chatRepository,
     required this.router,
   });
 
@@ -129,6 +135,9 @@ class EchoApp extends StatelessWidget {
   /// The backing [UserSearchRepository] exposed to child widgets.
   final UserSearchRepository userSearchRepository;
 
+  /// The backing [ChatRepository] exposed to child widgets.
+  final ChatRepository chatRepository;
+
   /// The [GoRouter] instance created from [createRouter].
   final GoRouter router;
 
@@ -143,6 +152,7 @@ class EchoApp extends StatelessWidget {
         RepositoryProvider<FollowRepository>.value(value: followRepository),
         RepositoryProvider<UserSearchRepository>.value(
             value: userSearchRepository),
+        RepositoryProvider<ChatRepository>.value(value: chatRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -166,6 +176,11 @@ class EchoApp extends StatelessWidget {
           BlocProvider<UserSearchBloc>(
             create: (context) => UserSearchBloc(
               repository: context.read<UserSearchRepository>(),
+            ),
+          ),
+          BlocProvider<ConversationsBloc>(
+            create: (context) => ConversationsBloc(
+              chatRepository: context.read<ChatRepository>(),
             ),
           ),
         ],

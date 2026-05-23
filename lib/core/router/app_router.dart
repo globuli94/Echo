@@ -26,6 +26,10 @@ import '../../features/posts/domain/repositories/post_repository.dart';
 import '../../features/posts/presentation/bloc/create_post_bloc.dart';
 import '../../features/posts/presentation/bloc/user_posts_bloc.dart';
 import '../../features/posts/presentation/screens/create_post_screen.dart';
+import '../../features/chat/bloc/chat/chat_bloc.dart';
+import '../../features/chat/data/chat_repository.dart';
+import '../../features/chat/screens/chat_screen.dart';
+import '../../features/chat/screens/conversations_screen.dart';
 import '../../features/profile/domain/repositories/user_profile_repository.dart';
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
@@ -159,6 +163,30 @@ GoRouter createRouter(AuthBloc authBloc) {
               profileRepository: ctx.read<UserProfileRepository>(),
             ),
             child: FollowingScreen(profileUid: uid),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/conversations',
+        builder: (context, state) => const ConversationsScreen(),
+      ),
+      GoRoute(
+        path: '/chat/:conversationId',
+        builder: (context, state) {
+          final conversationId = state.pathParameters['conversationId']!;
+          final otherUserId = state.extra as String? ?? '';
+          final authState = context.read<AuthBloc>().state;
+          final currentUserId =
+              authState is AuthAuthenticated ? authState.user.uid : '';
+          return BlocProvider<ChatBloc>(
+            create: (ctx) => ChatBloc(
+              chatRepository: ctx.read<ChatRepository>(),
+              currentUserId: currentUserId,
+            ),
+            child: ChatScreen(
+              conversationId: conversationId,
+              otherUserId: otherUserId,
+            ),
           );
         },
       ),
