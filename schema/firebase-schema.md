@@ -49,6 +49,7 @@
 | `likeCount` | number | required | Cached count of likes; default 0 |
 | `commentCount` | number | required | Cached count of comments; default 0 |
 | `createdAt` | timestamp | required | Server timestamp set when the post is first created |
+| `imageUrl` | string | optional | HTTPS URL to the post image stored in Firebase Storage; omitted when no image |
 
 **Access patterns:**
 - Authenticated user reads any post (`posts/{postId}`, third party)
@@ -67,6 +68,7 @@
 | Path | Purpose | Owner | Access |
 |---|---|---|---|
 | `avatars/{userId}` | Avatar image for the user at `userId` | Authenticated user whose UID matches `userId` | Owner can write (upload/overwrite); any authenticated user can read |
+| `posts/{uid}/{postId}` | Image attached to a post | Authenticated user whose UID matches path segment `uid` | Owner can write (upload); any authenticated user can read |
 
 ---
 
@@ -76,7 +78,7 @@
 |---|---|
 | Firebase Authentication | Gate all Firestore read/write rules; provides `request.auth` context |
 | Cloud Firestore | Primary database for all user and post data |
-| Firebase Storage | Avatar image uploads referenced by `users.avatarUrl` |
+| Firebase Storage | Avatar image uploads referenced by `users.avatarUrl`; post image uploads referenced by `posts.imageUrl` |
 
 ## Authentication Providers
 
@@ -100,3 +102,4 @@ iOS OAuth configuration:
 | 2026-05-22 | Safe | Initial schema — `users` and `posts` collections created |
 | 2026-05-23 | Safe | Firebase Authentication enabled — Email/Password and Google Sign-In providers; iOS OAuth settings configured |
 | 2026-05-23 | Safe | SOCAA-402: Storage Paths section added documenting `avatars/{userId}`; `firestore.rules` update rule for `users` scoped to allowed fields (`displayName`, `bio`, `avatarUrl`) |
+| 2026-05-23 | Safe | SOCAA-408: `imageUrl` optional field added to `posts` collection; `posts/{uid}/{postId}` Storage path added |
