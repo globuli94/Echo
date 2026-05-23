@@ -80,7 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: const Text('Profile'),
         automaticallyImplyLeading: false,
-        leading: context.canPop() ? const BackButton() : null,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
       ),
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
