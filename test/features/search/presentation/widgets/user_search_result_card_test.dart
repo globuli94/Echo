@@ -1,9 +1,13 @@
 // Copyright (c) 2024. All rights reserved.
 // Test suite for UserSearchResultCard widget.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:echo/features/follow/domain/entities/follow_status.dart';
+import 'package:echo/features/follow/domain/repositories/follow_repository.dart';
 import 'package:echo/features/follow/presentation/bloc/follow_bloc.dart';
+import 'package:echo/features/follow/presentation/bloc/follow_event.dart';
 import 'package:echo/features/follow/presentation/bloc/follow_state.dart';
 import 'package:echo/features/profile/domain/entities/user_profile.dart';
 import 'package:echo/features/search/presentation/widgets/user_search_result_card.dart';
@@ -12,28 +16,45 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockFollowBloc extends MockBloc<dynamic, dynamic> implements FollowBloc {}
+class MockFollowRepository extends Mock implements FollowRepository {}
 
 void main() {
-  late MockFollowBloc mockFollowBloc;
+  late MockFollowRepository mockFollowRepository;
 
   setUp(() {
-    mockFollowBloc = MockFollowBloc();
+    mockFollowRepository = MockFollowRepository();
   });
 
   Widget createWidgetUnderTest({
     required UserProfile user,
     required String currentUid,
     required VoidCallback onTap,
+    required FollowStatus followStatus,
   }) {
+    // Create a stream controller that emits the follow status
+    final controller = StreamController<FollowStatus>();
+    controller.add(followStatus);
+
+    // Mock the repository to return the stream - use specific values to avoid matcher issues
+    when(() => mockFollowRepository.streamFollowStatus(
+          currentUid: currentUid,
+          targetUid: user.uid,
+        )).thenAnswer((_) => controller.stream);
+
     return MaterialApp(
       home: Scaffold(
-        body: BlocProvider<FollowBloc>.value(
-          value: mockFollowBloc,
-          child: UserSearchResultCard(
-            user: user,
-            currentUid: currentUid,
-            onTap: onTap,
+        body: SingleChildScrollView(
+          child: SizedBox(
+            width: 800,
+            height: 200,
+            child: RepositoryProvider<FollowRepository>.value(
+              value: mockFollowRepository,
+              child: UserSearchResultCard(
+                user: user,
+                currentUid: currentUid,
+                onTap: onTap,
+              ),
+            ),
           ),
         ),
       ),
@@ -49,17 +70,15 @@ void main() {
         avatarUrl: null,
         postCount: 0,
       );
-      when(() => mockFollowBloc.state).thenReturn(
-        FollowStatusLoaded(
-          status: FollowStatus(isFollowing: false, targetUid: 'uid1'),
-        ),
-      );
+      final followStatus =
+          FollowStatus(isFollowing: false, targetUid: 'uid1');
 
       await tester.pumpWidget(
         createWidgetUnderTest(
           user: user,
           currentUid: 'currentUser',
           onTap: () {},
+          followStatus: followStatus,
         ),
       );
 
@@ -75,20 +94,19 @@ void main() {
         avatarUrl: null,
         postCount: 0,
       );
-      when(() => mockFollowBloc.state).thenReturn(
-        FollowStatusLoaded(
-          status: FollowStatus(isFollowing: false, targetUid: 'uid1'),
-        ),
-      );
+      final followStatus =
+          FollowStatus(isFollowing: false, targetUid: 'uid1');
 
       await tester.pumpWidget(
         createWidgetUnderTest(
           user: user,
           currentUid: 'currentUser',
           onTap: () {},
+          followStatus: followStatus,
         ),
       );
 
+      await tester.pumpAndSettle();
       expect(find.text('Follow'), findsOneWidget);
     });
 
@@ -101,20 +119,18 @@ void main() {
         avatarUrl: null,
         postCount: 0,
       );
-      when(() => mockFollowBloc.state).thenReturn(
-        FollowStatusLoaded(
-          status: FollowStatus(isFollowing: true, targetUid: 'uid1'),
-        ),
-      );
+      final followStatus = FollowStatus(isFollowing: true, targetUid: 'uid1');
 
       await tester.pumpWidget(
         createWidgetUnderTest(
           user: user,
           currentUid: 'currentUser',
           onTap: () {},
+          followStatus: followStatus,
         ),
       );
 
+      await tester.pumpAndSettle();
       expect(find.text('Unfollow'), findsOneWidget);
     });
 
@@ -126,17 +142,15 @@ void main() {
         avatarUrl: null,
         postCount: 0,
       );
-      when(() => mockFollowBloc.state).thenReturn(
-        FollowStatusLoaded(
-          status: FollowStatus(isFollowing: false, targetUid: 'sameUid'),
-        ),
-      );
+      final followStatus =
+          FollowStatus(isFollowing: false, targetUid: 'sameUid');
 
       await tester.pumpWidget(
         createWidgetUnderTest(
           user: user,
           currentUid: 'sameUid',
           onTap: () {},
+          followStatus: followStatus,
         ),
       );
 
@@ -153,21 +167,19 @@ void main() {
         avatarUrl: null,
         postCount: 0,
       );
-      when(() => mockFollowBloc.state).thenReturn(
-        FollowStatusLoaded(
-          status: FollowStatus(isFollowing: false, targetUid: 'uid1'),
-        ),
-      );
+      final followStatus =
+          FollowStatus(isFollowing: false, targetUid: 'uid1');
 
       await tester.pumpWidget(
         createWidgetUnderTest(
           user: user,
           currentUid: 'currentUser',
           onTap: () => tapCount++,
+          followStatus: followStatus,
         ),
       );
 
-      await tester.tap(find.byType(GestureDetector));
+      await tester.tap(find.byType(InkWell));
       await tester.pumpAndSettle();
 
       expect(tapCount, 1);
