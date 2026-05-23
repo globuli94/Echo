@@ -12,6 +12,8 @@ class UserProfile extends Equatable {
     required this.bio,
     required this.avatarUrl,
     required this.postCount,
+    this.followerCount = 0,
+    this.followingCount = 0,
   });
 
   final String uid;
@@ -19,12 +21,16 @@ class UserProfile extends Equatable {
   final String bio;
   final String? avatarUrl;
   final int postCount;
+  final int followerCount;
+  final int followingCount;
 
   /// Returns a copy with the given fields replaced.
   UserProfile copyWith({
     String? displayName,
     String? bio,
     String? avatarUrl,
+    int? followerCount,
+    int? followingCount,
   }) {
     return UserProfile(
       uid: uid,
@@ -32,9 +38,12 @@ class UserProfile extends Equatable {
       bio: bio ?? this.bio,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       postCount: postCount,
+      followerCount: followerCount ?? this.followerCount,
+      followingCount: followingCount ?? this.followingCount,
     );
   }
 
   @override
-  List<Object?> get props => [uid, displayName, bio, avatarUrl, postCount];
+  List<Object?> get props =>
+      [uid, displayName, bio, avatarUrl, postCount, followerCount, followingCount];
 }

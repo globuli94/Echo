@@ -22,7 +22,9 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
       displayName: (data['displayName'] as String?) ?? '',
       bio: (data['bio'] as String?) ?? '',
       avatarUrl: data['avatarUrl'] as String?,
-      postCount: (data['postCount'] as int?) ?? 0,
+      postCount: (data['postCount'] as num?)?.toInt() ?? 0,
+      followerCount: (data['followerCount'] as num?)?.toInt() ?? 0,
+      followingCount: (data['followingCount'] as num?)?.toInt() ?? 0,
     );
   }
 

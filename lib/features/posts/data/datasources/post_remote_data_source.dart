@@ -41,6 +41,14 @@ abstract class PostRemoteDataSource {
   });
 
   Future<Map<String, dynamic>?> getAuthorProfile(String uid);
+
+  /// Fetches up to [limit] raw post documents for the given [authorIds],
+  /// ordered by `createdAt` DESC. Returns empty list if [authorIds] is empty.
+  Future<List<Map<String, dynamic>>> fetchFollowedFeedPage({
+    required List<String> authorIds,
+    DateTime? before,
+    required int limit,
+  });
 }
 
 class PostRemoteDataSourceImpl implements PostRemoteDataSource {
@@ -139,5 +147,31 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
     final doc = await _firestore.collection('users').doc(uid).get();
     if (!doc.exists) return null;
     return doc.data();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchFollowedFeedPage({
+    required List<String> authorIds,
+    DateTime? before,
+    required int limit,
+  }) async {
+    if (authorIds.isEmpty) return [];
+
+    Query<Map<String, dynamic>> query = _firestore
+        .collection('posts')
+        .where('authorId', whereIn: authorIds)
+        .orderBy('createdAt', descending: true);
+
+    if (before != null) {
+      query = query.where(
+        'createdAt',
+        isLessThan: Timestamp.fromDate(before),
+      );
+    }
+
+    final snapshot = await query.limit(limit).get();
+    return snapshot.docs
+        .map((doc) => {'id': doc.id, ...doc.data()})
+        .toList();
   }
 }

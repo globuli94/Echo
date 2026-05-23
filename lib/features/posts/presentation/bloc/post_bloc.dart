@@ -5,6 +5,7 @@
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../follow/domain/repositories/follow_repository.dart';
 import '../../domain/repositories/post_repository.dart';
 import 'post_event.dart';
 import 'post_state.dart';
@@ -13,8 +14,11 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   /// Number of posts fetched per page.
   static const int _pageSize = 15;
 
-  PostBloc({required PostRepository repository})
-      : _repository = repository,
+  PostBloc({
+    required PostRepository repository,
+    FollowRepository? followRepository,
+  })  : _repository = repository,
+        _followRepository = followRepository,
         super(const PostsInitial()) {
     on<PostsFeedSubscribed>(_onFeedSubscribed);
     on<PostsFeedRefreshed>(_onFeedRefreshed);
@@ -23,14 +27,40 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   }
 
   final PostRepository _repository;
+  final FollowRepository? _followRepository;
+
+  /// Cached uid of the authenticated user, set on first feed load.
+  String? _currentUid;
+
+  Future<FeedPage> _fetchFollowedPage({
+    required String currentUid,
+    DateTime? before,
+  }) async {
+    final followRepo = _followRepository;
+    if (followRepo == null || currentUid.isEmpty) {
+      // Fall back to full feed when follow repository is unavailable.
+      return _repository.fetchFeedPage(before: before, limit: _pageSize);
+    }
+    final followingUids =
+        await followRepo.getFollowingUids(uid: currentUid);
+    final authorIds = {...followingUids, currentUid}.toList();
+    final ids =
+        authorIds.length > 30 ? authorIds.take(30).toList() : authorIds;
+    return _repository.fetchFollowedFeedPage(
+      authorIds: ids,
+      before: before,
+      limit: _pageSize,
+    );
+  }
 
   Future<void> _onFeedSubscribed(
     PostsFeedSubscribed event,
     Emitter<PostState> emit,
   ) async {
+    _currentUid = event.currentUid;
     emit(const PostsLoading());
     try {
-      final page = await _repository.fetchFeedPage(limit: _pageSize);
+      final page = await _fetchFollowedPage(currentUid: event.currentUid);
       emit(PostsLoaded(
         posts: page.posts,
         hasMore: page.hasMore,
@@ -45,9 +75,10 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     PostsFeedRefreshed event,
     Emitter<PostState> emit,
   ) async {
+    _currentUid = event.currentUid;
     emit(const PostsLoading());
     try {
-      final page = await _repository.fetchFeedPage(limit: _pageSize);
+      final page = await _fetchFollowedPage(currentUid: event.currentUid);
       emit(PostsLoaded(
         posts: page.posts,
         hasMore: page.hasMore,
@@ -69,10 +100,19 @@ class PostBloc extends Bloc<PostEvent, PostState> {
 
     emit(current.copyWith(isLoadingMore: true));
     try {
-      final page = await _repository.fetchFeedPage(
-        before: current.nextCursor,
-        limit: _pageSize,
-      );
+      final uid = _currentUid;
+      final FeedPage page;
+      if (uid != null) {
+        page = await _fetchFollowedPage(
+          currentUid: uid,
+          before: current.nextCursor,
+        );
+      } else {
+        page = await _repository.fetchFeedPage(
+          before: current.nextCursor,
+          limit: _pageSize,
+        );
+      }
       emit(current.copyWith(
         posts: [...current.posts, ...page.posts],
         hasMore: page.hasMore,

@@ -11,6 +11,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../follow/presentation/bloc/follow_bloc.dart';
+import '../../../follow/presentation/bloc/follow_event.dart';
+import '../../../follow/presentation/bloc/follow_state.dart';
 import '../../domain/entities/user_profile.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
@@ -127,11 +130,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.grid_on, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${profile.postCount} posts',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                        _StatItem(
+                          icon: Icons.grid_on,
+                          label: '${profile.postCount} posts',
+                        ),
+                        const SizedBox(width: 24),
+                        _StatItem(
+                          icon: Icons.people,
+                          label: '${profile.followerCount} followers',
+                        ),
+                        const SizedBox(width: 24),
+                        _StatItem(
+                          icon: Icons.person_add,
+                          label: '${profile.followingCount} following',
                         ),
                       ],
                     ),
@@ -141,6 +152,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onPressed: () => context.push('/edit-profile'),
                         child: const Text('Edit Profile'),
                       ),
+                    ] else ...[
+                      const SizedBox(height: 24),
+                      _FollowButton(profile: profile),
                     ],
                   ],
                 ),
@@ -151,6 +165,123 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  const _StatItem({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18),
+        const SizedBox(width: 4),
+        Text(label, style: Theme.of(context).textTheme.bodyMedium),
+      ],
+    );
+  }
+}
+
+class _FollowButton extends StatelessWidget {
+  const _FollowButton({required this.profile});
+
+  final UserProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<FollowBloc, FollowState>(
+      listener: (context, state) {
+        if (state is FollowStatusLoaded) {
+          // After follow/unfollow completes, refresh the profile to update counts.
+          final authState = context.read<AuthBloc>().state;
+          if (authState is AuthAuthenticated) {
+            context.read<ProfileBloc>().add(
+                  ProfileLoadRequested(
+                    uid: profile.uid,
+                    viewerUid: authState.user.uid,
+                  ),
+                );
+          }
+        }
+      },
+      builder: (context, state) {
+        if (state is FollowInitial || state is FollowLoading) {
+          return const SizedBox(
+            width: 120,
+            child: ElevatedButton(
+              onPressed: null,
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        if (state is FollowActionInProgress) {
+          return SizedBox(
+            width: 120,
+            child: state.status.isFollowing
+                ? OutlinedButton(
+                    onPressed: null,
+                    child: const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : ElevatedButton(
+                    onPressed: null,
+                    child: const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+          );
+        }
+
+        final bool isFollowing;
+        if (state is FollowStatusLoaded) {
+          isFollowing = state.status.isFollowing;
+        } else if (state is FollowFailure && state.lastKnownStatus != null) {
+          isFollowing = state.lastKnownStatus!.isFollowing;
+        } else {
+          isFollowing = false;
+        }
+
+        final authState = context.read<AuthBloc>().state;
+        final currentUid =
+            authState is AuthAuthenticated ? authState.user.uid : '';
+
+        if (isFollowing) {
+          return OutlinedButton(
+            onPressed: () => context.read<FollowBloc>().add(
+                  UnfollowRequested(
+                    currentUid: currentUid,
+                    targetUid: profile.uid,
+                  ),
+                ),
+            child: const Text('Unfollow'),
+          );
+        }
+
+        return ElevatedButton(
+          onPressed: () => context.read<FollowBloc>().add(
+                FollowRequested(
+                  currentUid: currentUid,
+                  targetUid: profile.uid,
+                ),
+              ),
+          child: const Text('Follow'),
+        );
+      },
     );
   }
 }
