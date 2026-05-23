@@ -7,6 +7,8 @@ import 'package:echo/features/auth/domain/entities/auth_user.dart';
 import 'package:echo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:echo/features/auth/presentation/bloc/auth_state.dart';
 import 'package:echo/features/navigation/presentation/screens/main_shell.dart';
+import 'package:echo/features/posts/presentation/bloc/user_posts_bloc.dart';
+import 'package:echo/features/posts/presentation/bloc/user_posts_state.dart';
 import 'package:echo/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:echo/features/profile/presentation/bloc/profile_state.dart';
 
@@ -14,14 +16,18 @@ class MockAuthBloc extends Mock implements AuthBloc {}
 
 class MockProfileBloc extends Mock implements ProfileBloc {}
 
+class MockUserPostsBloc extends Mock implements UserPostsBloc {}
+
 void main() {
   group('MainShell', () {
     late MockAuthBloc mockAuthBloc;
     late MockProfileBloc mockProfileBloc;
+    late MockUserPostsBloc mockUserPostsBloc;
 
     setUp(() {
       mockAuthBloc = MockAuthBloc();
       mockProfileBloc = MockProfileBloc();
+      mockUserPostsBloc = MockUserPostsBloc();
 
       // Stub AuthBloc state
       when(() => mockAuthBloc.state).thenReturn(
@@ -34,6 +40,12 @@ void main() {
       // Stub ProfileBloc state
       when(() => mockProfileBloc.state).thenReturn(const ProfileInitial());
       when(() => mockProfileBloc.stream).thenAnswer((_) => const Stream.empty());
+
+      // Stub UserPostsBloc state — required because ProfileScreen reads this
+      // bloc via IndexedStack even when the Profile tab is not active.
+      when(() => mockUserPostsBloc.state).thenReturn(const UserPostsInitial());
+      when(() => mockUserPostsBloc.stream)
+          .thenAnswer((_) => const Stream.empty());
     });
 
     Widget createWidgetUnderTest() {
@@ -42,6 +54,7 @@ void main() {
           providers: [
             BlocProvider<AuthBloc>.value(value: mockAuthBloc),
             BlocProvider<ProfileBloc>.value(value: mockProfileBloc),
+            BlocProvider<UserPostsBloc>.value(value: mockUserPostsBloc),
           ],
           child: const MainShell(),
         ),
