@@ -14,7 +14,7 @@ void main() {
 
     setUp(() {
       mockDataSource = MockPostRemoteDataSource();
-      repository = PostRepositoryImpl(mockDataSource);
+      repository = PostRepositoryImpl(dataSource: mockDataSource);
     });
 
     group('likePost', () {

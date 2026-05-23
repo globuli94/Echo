@@ -18,13 +18,9 @@ void main() {
         'when LikeStatusFetched succeeds and user has not liked',
         build: () {
           mockPostRepository = MockPostRepository();
-          const postId = 'post-1';
-          const userId = 'user-1';
-          const initialCount = 3;
-
           when(() => mockPostRepository.isPostLikedBy(
-                postId: postId,
-                uid: userId,
+                postId: 'post-1',
+                uid: 'user-1',
               )).thenAnswer((_) async => false);
 
           return LikeBloc(repository: mockPostRepository);
@@ -49,13 +45,9 @@ void main() {
         'when LikeStatusFetched succeeds and user has liked',
         build: () {
           mockPostRepository = MockPostRepository();
-          const postId = 'post-2';
-          const userId = 'user-2';
-          const initialCount = 5;
-
           when(() => mockPostRepository.isPostLikedBy(
-                postId: postId,
-                uid: userId,
+                postId: 'post-2',
+                uid: 'user-2',
               )).thenAnswer((_) async => true);
 
           return LikeBloc(repository: mockPostRepository);
