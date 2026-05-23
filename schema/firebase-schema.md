@@ -84,7 +84,7 @@
 
 **Query patterns:**
 - Fetch all documents from `users/{uid}/following` (no filter, no sort) — retrieve full following list to build feed; no composite index required
-- Collection group query on `following` filtering `targetUid == uid` — retrieve all followers of a user (FollowersScreen); Firestore automatically maintains a COLLECTION_GROUP single-field index on `targetUid`; no explicit composite index entry required in `firestore.indexes.json`
+- Collection group query on `following` filtering `targetUid == uid` — retrieve all followers of a user (FollowersScreen); **requires explicit COLLECTION_GROUP field override** for `targetUid` in `firestore.indexes.json` (Firestore auto-indexes only COLLECTION scope; COLLECTION_GROUP must be configured via `fieldOverrides`)
 
 ---
 
@@ -130,3 +130,4 @@ iOS OAuth configuration:
 | 2026-05-23 | Safe | SOCAA-408: `imageUrl` optional field added to `posts` collection; `posts/{uid}/{postId}` Storage path added |
 | 2026-05-23 | Safe | SOCAA-417: `users/{uid}/following/{targetUid}` subcollection added with `followedAt` and `targetUid` fields; `users` update rule expanded to allow any authenticated user to increment `followerCount` or `followingCount`; composite index for `posts(authorId, createdAt)` confirmed present |
 | 2026-05-23 | Safe | SOCAA-420: Collection group read rule added for `following` (FollowersScreen); COLLECTION_GROUP index on `following.targetUid` added to `firestore.indexes.json`; access and query patterns updated in schema doc |
+| 2026-05-23 | Safe | SOCAA-431 (BUG): Re-added COLLECTION_GROUP index for `following.targetUid` as a `fieldOverride` (correct form for single-field collection group indexes); corrected schema note that falsely claimed Firestore auto-maintains COLLECTION_GROUP scope |
