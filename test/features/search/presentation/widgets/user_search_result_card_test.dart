@@ -4,6 +4,9 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:echo/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:echo/features/auth/presentation/bloc/auth_event.dart';
+import 'package:echo/features/auth/presentation/bloc/auth_state.dart';
 import 'package:echo/features/follow/domain/entities/follow_status.dart';
 import 'package:echo/features/follow/domain/repositories/follow_repository.dart';
 import 'package:echo/features/follow/presentation/bloc/follow_bloc.dart';
@@ -18,11 +21,17 @@ import 'package:mocktail/mocktail.dart';
 
 class MockFollowRepository extends Mock implements FollowRepository {}
 
+class MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
+
 void main() {
   late MockFollowRepository mockFollowRepository;
+  late MockAuthBloc mockAuthBloc;
 
   setUp(() {
     mockFollowRepository = MockFollowRepository();
+    mockAuthBloc = MockAuthBloc();
+    // Mock AuthBloc state to be AuthUnauthenticated (fallback to currentUid)
+    when(() => mockAuthBloc.state).thenReturn(const AuthUnauthenticated());
   });
 
   Widget createWidgetUnderTest({
@@ -31,15 +40,15 @@ void main() {
     required VoidCallback onTap,
     required FollowStatus followStatus,
   }) {
-    // Create a stream controller that emits the follow status
-    final controller = StreamController<FollowStatus>();
-    controller.add(followStatus);
+    // Create a broadcast stream that emits the follow status
+    // Use asBroadcastStream() on Future.value to create a reusable stream
+    final stream = Stream.value(followStatus).asBroadcastStream();
 
     // Mock the repository to return the stream - use specific values to avoid matcher issues
     when(() => mockFollowRepository.streamFollowStatus(
           currentUid: currentUid,
           targetUid: user.uid,
-        )).thenAnswer((_) => controller.stream);
+        )).thenAnswer((_) => stream);
 
     return MaterialApp(
       home: Scaffold(
@@ -47,8 +56,13 @@ void main() {
           child: SizedBox(
             width: 800,
             height: 200,
-            child: RepositoryProvider<FollowRepository>.value(
-              value: mockFollowRepository,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+                RepositoryProvider<FollowRepository>.value(
+                  value: mockFollowRepository,
+                ),
+              ],
               child: UserSearchResultCard(
                 user: user,
                 currentUid: currentUid,
@@ -179,7 +193,8 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(InkWell));
+      // Tap the card's InkWell (not the button's)
+      await tester.tap(find.byType(InkWell).first);
       await tester.pumpAndSettle();
 
       expect(tapCount, 1);
