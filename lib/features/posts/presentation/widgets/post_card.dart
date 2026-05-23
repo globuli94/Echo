@@ -5,6 +5,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/entities/post_with_author.dart';
@@ -36,38 +37,47 @@ class PostCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundImage: postWithAuthor.authorAvatarUrl != null
-                      ? CachedNetworkImageProvider(
-                          postWithAuthor.authorAvatarUrl!)
-                      : null,
-                  child: postWithAuthor.authorAvatarUrl == null
-                      ? Text(
-                          postWithAuthor.authorDisplayName.isNotEmpty
-                              ? postWithAuthor.authorDisplayName[0]
-                                  .toUpperCase()
-                              : '?',
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                GestureDetector(
+                  onTap: () =>
+                      context.push('/profile/${post.authorId}'),
+                  child: Row(
                     children: [
-                      Text(
-                        postWithAuthor.authorDisplayName,
-                        style: Theme.of(context).textTheme.titleSmall,
-                        overflow: TextOverflow.ellipsis,
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundImage: postWithAuthor.authorAvatarUrl != null
+                            ? CachedNetworkImageProvider(
+                                postWithAuthor.authorAvatarUrl!)
+                            : null,
+                        child: postWithAuthor.authorAvatarUrl == null
+                            ? Text(
+                                postWithAuthor.authorDisplayName.isNotEmpty
+                                    ? postWithAuthor.authorDisplayName[0]
+                                        .toUpperCase()
+                                    : '?',
+                              )
+                            : null,
                       ),
-                      Text(
-                        formattedDate,
-                        style: Theme.of(context).textTheme.bodySmall,
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              postWithAuthor.authorDisplayName,
+                              style: Theme.of(context).textTheme.titleSmall,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              formattedDate,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
+                const Spacer(),
                 if (post.authorId == currentUserId)
                   IconButton(
                     icon: const Icon(Icons.delete_outline),

@@ -1,6 +1,7 @@
 // lib/features/feed/presentation/screens/feed_screen.dart
 //
-// FeedScreen — live post feed with FAB to create a new post.
+// FeedScreen — paginated post feed with pull-to-refresh, infinite scroll,
+// empty state, and author profile navigation.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,11 +22,41 @@ class FeedScreen extends StatefulWidget {
 }
 
 class _FeedScreenState extends State<FeedScreen> {
+  late final ScrollController _scrollController;
+
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
     // Null-safe read: PostBloc may not be in the tree during unit tests.
     context.read<PostBloc?>()?.add(const PostsFeedSubscribed());
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// Dispatches [PostsFeedLoadMore] when the user scrolls within 200 px of
+  /// the bottom of the list.
+  void _onScroll() {
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 200) {
+      context.read<PostBloc?>()?.add(const PostsFeedLoadMore());
+    }
+  }
+
+  /// Called by [RefreshIndicator]. Dispatches [PostsFeedRefreshed] and waits
+  /// for the BLoC to leave the loading state before completing.
+  Future<void> _onRefresh() async {
+    final bloc = context.read<PostBloc?>();
+    if (bloc == null) return;
+    bloc.add(const PostsFeedRefreshed());
+    await bloc.stream.firstWhere(
+      (s) => s is PostsLoaded || s is PostsError,
+    );
   }
 
   @override
@@ -51,17 +82,25 @@ class _FeedScreenState extends State<FeedScreen> {
                   return Center(child: Text(state.message));
                 }
                 if (state is PostsLoaded) {
-                  if (state.posts.isEmpty) {
-                    return const Center(child: Text('No posts yet'));
-                  }
-                  return ListView.builder(
-                    itemCount: state.posts.length,
-                    itemBuilder: (context, index) {
-                      return PostCard(
-                        postWithAuthor: state.posts[index],
-                        currentUserId: currentUserId,
-                      );
-                    },
+                  return RefreshIndicator(
+                    onRefresh: _onRefresh,
+                    child: state.posts.isEmpty
+                        ? _EmptyFeedView(scrollController: _scrollController)
+                        : ListView.builder(
+                            controller: _scrollController,
+                            // Extra item for the bottom loading indicator.
+                            itemCount: state.posts.length +
+                                (state.isLoadingMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == state.posts.length) {
+                                return const _BottomLoadingIndicator();
+                              }
+                              return PostCard(
+                                postWithAuthor: state.posts[index],
+                                currentUserId: currentUserId,
+                              );
+                            },
+                          ),
                   );
                 }
                 return const SizedBox.shrink();
@@ -73,6 +112,60 @@ class _FeedScreenState extends State<FeedScreen> {
               onPressed: () => context.push('/create-post'),
               child: const Icon(Icons.add),
             ),
+    );
+  }
+}
+
+/// Shown when the feed has loaded but contains no posts. Uses a scrollable
+/// layout so [RefreshIndicator] drag gestures still work on the empty state.
+class _EmptyFeedView extends StatelessWidget {
+  const _EmptyFeedView({required this.scrollController});
+
+  final ScrollController scrollController;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      controller: scrollController,
+      children: [
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.5,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.post_add_outlined,
+                size: 64,
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(77),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No posts yet',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Be the first to share something!',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Loading spinner rendered as the last list item while a pagination request
+/// is in flight.
+class _BottomLoadingIndicator extends StatelessWidget {
+  const _BottomLoadingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Center(child: CircularProgressIndicator()),
     );
   }
 }

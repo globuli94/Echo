@@ -11,9 +11,21 @@ sealed class PostEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Triggers subscription to the live post feed stream.
+/// Triggers an initial fetch of the post feed (first page).
 final class PostsFeedSubscribed extends PostEvent {
   const PostsFeedSubscribed();
+}
+
+/// Requests a full feed refresh, replacing all currently loaded posts with
+/// a fresh first page.
+final class PostsFeedRefreshed extends PostEvent {
+  const PostsFeedRefreshed();
+}
+
+/// Requests loading the next page of posts when the user scrolls near the
+/// bottom of the feed.
+final class PostsFeedLoadMore extends PostEvent {
+  const PostsFeedLoadMore();
 }
 
 /// Requests deletion of a post by [postId].

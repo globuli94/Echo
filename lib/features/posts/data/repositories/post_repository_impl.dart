@@ -17,41 +17,69 @@ class PostRepositoryImpl implements PostRepository {
 
   @override
   Stream<List<PostWithAuthor>> streamFeed() {
-    return _dataSource.streamFeed().asyncMap((docs) async {
-      final uniqueAuthorIds =
-          docs.map((d) => d['authorId'] as String).toSet().toList();
+    return _dataSource.streamFeed().asyncMap(_docsToPostsWithAuthors);
+  }
 
-      final profileFutures =
-          uniqueAuthorIds.map((uid) => _dataSource.getAuthorProfile(uid));
-      final profiles = await Future.wait(profileFutures);
+  @override
+  Future<FeedPage> fetchFeedPage({
+    DateTime? before,
+    int limit = 15,
+  }) async {
+    // Fetch one extra item to determine whether another page exists.
+    final docs = await _dataSource.fetchFeedPage(
+      before: before,
+      limit: limit + 1,
+    );
 
-      final profileMap = <String, Map<String, dynamic>?>{};
-      for (var i = 0; i < uniqueAuthorIds.length; i++) {
-        profileMap[uniqueAuthorIds[i]] = profiles[i];
-      }
+    final hasMore = docs.length > limit;
+    final pageDocs = hasMore ? docs.take(limit).toList() : docs;
 
-      return docs.map((doc) {
-        final post = Post(
-          postId: doc['postId'] as String,
-          authorId: doc['authorId'] as String,
-          content: doc['content'] as String,
-          imageUrl: doc['imageUrl'] as String?,
-          likeCount: (doc['likeCount'] as num?)?.toInt() ?? 0,
-          commentCount: (doc['commentCount'] as num?)?.toInt() ?? 0,
-          createdAt: doc['createdAt'] != null
-              ? (doc['createdAt'] as dynamic).toDate() as DateTime
-              : DateTime.now(),
-        );
+    final posts = await _docsToPostsWithAuthors(pageDocs);
 
-        final profile = profileMap[post.authorId];
-        return PostWithAuthor(
-          post: post,
-          authorDisplayName:
-              (profile?['displayName'] as String?) ?? 'Unknown User',
-          authorAvatarUrl: profile?['avatarUrl'] as String?,
-        );
-      }).toList();
-    });
+    final DateTime? nextCursor =
+        posts.isNotEmpty ? posts.last.post.createdAt : null;
+
+    return FeedPage(posts: posts, hasMore: hasMore, nextCursor: nextCursor);
+  }
+
+  /// Resolves author profiles and maps raw Firestore document maps to
+  /// [PostWithAuthor] entities.
+  Future<List<PostWithAuthor>> _docsToPostsWithAuthors(
+    List<Map<String, dynamic>> docs,
+  ) async {
+    final uniqueAuthorIds =
+        docs.map((d) => d['authorId'] as String).toSet().toList();
+
+    final profileFutures =
+        uniqueAuthorIds.map((uid) => _dataSource.getAuthorProfile(uid));
+    final profiles = await Future.wait(profileFutures);
+
+    final profileMap = <String, Map<String, dynamic>?>{};
+    for (var i = 0; i < uniqueAuthorIds.length; i++) {
+      profileMap[uniqueAuthorIds[i]] = profiles[i];
+    }
+
+    return docs.map((doc) {
+      final post = Post(
+        postId: doc['postId'] as String,
+        authorId: doc['authorId'] as String,
+        content: doc['content'] as String,
+        imageUrl: doc['imageUrl'] as String?,
+        likeCount: (doc['likeCount'] as num?)?.toInt() ?? 0,
+        commentCount: (doc['commentCount'] as num?)?.toInt() ?? 0,
+        createdAt: doc['createdAt'] != null
+            ? (doc['createdAt'] as dynamic).toDate() as DateTime
+            : DateTime.now(),
+      );
+
+      final profile = profileMap[post.authorId];
+      return PostWithAuthor(
+        post: post,
+        authorDisplayName:
+            (profile?['displayName'] as String?) ?? 'Unknown User',
+        authorAvatarUrl: profile?['avatarUrl'] as String?,
+      );
+    }).toList();
   }
 
   @override
