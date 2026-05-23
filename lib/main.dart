@@ -6,6 +6,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -19,6 +20,10 @@ import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
+import 'features/profile/data/datasources/profile_remote_data_source.dart';
+import 'features/profile/data/repositories/user_profile_repository_impl.dart';
+import 'features/profile/domain/repositories/user_profile_repository.dart';
+import 'features/profile/presentation/bloc/profile_bloc.dart';
 import 'firebase_options.dart';
 
 /// Initialises Firebase and runs the app.
@@ -32,19 +37,31 @@ Future<void> main() async {
     // Firebase already initialised on the native side (e.g. hot restart).
   }
 
+  final firestore = FirebaseFirestore.instance;
+  final storage = FirebaseStorage.instance;
+
   final dataSource = AuthRemoteDataSourceImpl(
     firebaseAuth: FirebaseAuth.instance,
     googleSignIn: GoogleSignIn(),
-    firestore: FirebaseFirestore.instance,
+    firestore: firestore,
   );
   final authRepository = AuthRepositoryImpl(dataSource: dataSource);
   final authBloc = AuthBloc(repository: authRepository)
     ..add(const AuthStarted());
+
+  final profileDataSource = ProfileRemoteDataSourceImpl(
+    firestore: firestore,
+    storage: storage,
+  );
+  final userProfileRepository =
+      UserProfileRepositoryImpl(dataSource: profileDataSource);
+
   final router = createRouter(authBloc);
 
   runApp(EchoApp(
     authRepository: authRepository,
     authBloc: authBloc,
+    userProfileRepository: userProfileRepository,
     router: router,
   ));
 }
@@ -58,6 +75,7 @@ class EchoApp extends StatelessWidget {
     super.key,
     required this.authRepository,
     required this.authBloc,
+    required this.userProfileRepository,
     required this.router,
   });
 
@@ -67,6 +85,9 @@ class EchoApp extends StatelessWidget {
   /// The global [AuthBloc] managing authentication state.
   final AuthBloc authBloc;
 
+  /// The backing [UserProfileRepository] exposed to child widgets.
+  final UserProfileRepository userProfileRepository;
+
   /// The [GoRouter] instance created from [createRouter].
   final GoRouter router;
 
@@ -75,10 +96,17 @@ class EchoApp extends StatelessWidget {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<AuthRepository>.value(value: authRepository),
+        RepositoryProvider<UserProfileRepository>.value(
+            value: userProfileRepository),
       ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider<AuthBloc>.value(value: authBloc),
+          BlocProvider<ProfileBloc>(
+            create: (context) => ProfileBloc(
+              repository: context.read<UserProfileRepository>(),
+            ),
+          ),
         ],
         child: MaterialApp.router(
           title: 'Echo',

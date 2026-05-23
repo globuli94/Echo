@@ -50,4 +50,10 @@ abstract class AuthRepository {
   ///
   /// Called on first sign-up to populate the user's public profile.
   Future<void> createUserDocument({required AuthUser user});
+
+  /// Creates `users/{uid}` only when the document does not already exist.
+  ///
+  /// Called on Google Sign-In to ensure the document is created on first login
+  /// without overwriting an existing profile on subsequent logins.
+  Future<void> ensureUserDocument({required AuthUser user});
 }
