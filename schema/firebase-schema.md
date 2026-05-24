@@ -66,6 +66,28 @@
 
 ---
 
+### `posts/{postId}/likes/{uid}`
+
+**Path:** `posts/{postId}/likes/{uid}`
+**Purpose:** Tracks per-user like state for a post. Document ID equals the Firebase Auth UID of the user who liked the post, enabling O(1) "did current user like this post?" lookup. Written as a single create/delete; does not use batch writes.
+**Owner:** Authenticated user whose UID matches the document ID (and path segment `uid`).
+
+| Field | Firestore Type | Required | Description |
+|---|---|---|---|
+| `uid` | string | required | Firebase Auth UID of the user who liked the post; mirrors the document ID |
+| `likedAt` | timestamp | required | Server timestamp set when the like is created |
+
+**Access patterns:**
+- Authenticated user creates their own like document (`uid == auth.uid`) — single write
+- Authenticated user deletes their own like document (`uid == auth.uid`) — single write
+- Any authenticated user reads a like document (e.g. to check if a specific user liked a post) — single get
+- Any authenticated user lists all documents in a post's likes subcollection — list
+
+**Query patterns:**
+- Fetch single document by ID: `posts/{postId}/likes/{auth.uid}` — O(1) check whether current user liked a post; no composite index required
+
+---
+
 ### `users/{uid}/following/{targetUid}`
 
 **Path:** `users/{followerId}/following/{targetUid}`
@@ -181,5 +203,4 @@ iOS OAuth configuration:
 | 2026-05-23 | Safe | SOCAA-417: `users/{uid}/following/{targetUid}` subcollection added with `followedAt` and `targetUid` fields; `users` update rule expanded to allow any authenticated user to increment `followerCount` or `followingCount`; composite index for `posts(authorId, createdAt)` confirmed present |
 | 2026-05-23 | Safe | SOCAA-420: Collection group read rule added for `following` (FollowersScreen); COLLECTION_GROUP index on `following.targetUid` added to `firestore.indexes.json`; access and query patterns updated in schema doc |
 | 2026-05-23 | Safe | SOCAA-424: `users` collection list access pattern added for `displayName` prefix search; query covered by Firestore automatic single-field index on `displayName` (no explicit composite index required); existing `allow read: if request.auth != null` rule confirmed to cover list operations |
-| 2026-05-24 | Safe | SOCAA-452: `users/{uid}/notifications/{notificationId}` subcollection added with 8 fields; owner can get/list/update (read-field only); any authenticated user can create; no new composite index required |
-| 2026-05-24 | Safe | SOCAA-451: `users/{uid}/likes/{postId}` subcollection added with `likedAt` field; owner can create/delete; any authenticated user can read; `posts` update rule expanded to allow any authenticated user to update `likeCount`; no new composite index required |
+| 2026-05-23 | Safe | SOCAA-439: `posts/{postId}/likes/{uid}` subcollection added with `uid` and `likedAt` fields; Firestore rules added for likes (read: any authenticated user; create/delete: owner only); `likeCount` update rule on posts confirmed present and scoped to `likeCount` only; no composite index required |

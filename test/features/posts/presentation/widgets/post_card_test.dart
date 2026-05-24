@@ -21,13 +21,14 @@ Post makePost({
   String authorId = 'user-1',
   String content = 'Hello world',
   String? imageUrl,
+  int likeCount = 0,
 }) =>
     Post(
       postId: postId,
       authorId: authorId,
       content: content,
       imageUrl: imageUrl,
-      likeCount: 0,
+      likeCount: likeCount,
       commentCount: 0,
       createdAt: DateTime(2026, 1, 1),
     );
@@ -46,9 +47,11 @@ PostWithAuthor makePostWithAuthor({
 void main() {
   group('PostCard', () {
     late MockPostBloc mockPostBloc;
+    late MockPostRepository mockPostRepository;
 
     setUp(() {
       mockPostBloc = MockPostBloc();
+      mockPostRepository = MockPostRepository();
 
       // Default mock state
       when(() => mockPostBloc.state).thenReturn(const PostsInitial());
@@ -67,9 +70,12 @@ void main() {
         home: Scaffold(
           body: BlocProvider<PostBloc>.value(
             value: mockPostBloc,
-            child: PostCard(
-              postWithAuthor: postWithAuthor,
-              currentUserId: currentUserId,
+            child: RepositoryProvider<PostRepository>.value(
+              value: mockPostRepository,
+              child: PostCard(
+                postWithAuthor: postWithAuthor,
+                currentUserId: currentUserId,
+              ),
             ),
           ),
         ),
@@ -223,6 +229,115 @@ void main() {
         findsWidgets,
         reason:
             'Author area should have GestureDetector for profile navigation',
+      );
+    });
+
+    group('Like button', () {
+      testWidgets(
+        'shows Icons.favorite_border when user has not liked post',
+        (WidgetTester tester) async {
+          final postWithAuthor = makePostWithAuthor(post: makePost());
+          when(() => mockPostRepository.isPostLikedBy(
+                postId: 'post-1',
+                uid: 'user-1',
+              )).thenAnswer((_) async => false);
+
+          await tester.pumpWidget(
+            createWidgetUnderTest(
+              postWithAuthor: postWithAuthor,
+              currentUserId: 'user-1',
+            ),
+          );
+
+          // Wait for LikeStatusFetched to complete
+          await tester.pumpAndSettle();
+
+          expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'shows Icons.favorite when user has liked post',
+        (WidgetTester tester) async {
+          final postWithAuthor = makePostWithAuthor(post: makePost());
+          when(() => mockPostRepository.isPostLikedBy(
+                postId: 'post-1',
+                uid: 'user-1',
+              )).thenAnswer((_) async => true);
+
+          await tester.pumpWidget(
+            createWidgetUnderTest(
+              postWithAuthor: postWithAuthor,
+              currentUserId: 'user-1',
+            ),
+          );
+
+          // Wait for LikeStatusFetched to complete
+          await tester.pumpAndSettle();
+
+          expect(find.byIcon(Icons.favorite), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'displays likeCount from post',
+        (WidgetTester tester) async {
+          final postWithAuthor = makePostWithAuthor(
+            post: makePost(likeCount: 7),
+          );
+          when(() => mockPostRepository.isPostLikedBy(
+                postId: 'post-1',
+                uid: 'user-1',
+              )).thenAnswer((_) async => false);
+
+          await tester.pumpWidget(
+            createWidgetUnderTest(
+              postWithAuthor: postWithAuthor,
+              currentUserId: 'user-1',
+            ),
+          );
+
+          // Wait for LikeStatusFetched to complete
+          await tester.pumpAndSettle();
+
+          expect(find.text('7'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'dispatches LikeToggleRequested on tap',
+        (WidgetTester tester) async {
+          final postWithAuthor = makePostWithAuthor(post: makePost());
+          when(() => mockPostRepository.isPostLikedBy(
+                postId: 'post-1',
+                uid: 'user-1',
+              )).thenAnswer((_) async => false);
+          when(() => mockPostRepository.likePost(
+                postId: 'post-1',
+                currentUserId: 'user-1',
+              )).thenAnswer((_) async {});
+
+          await tester.pumpWidget(
+            createWidgetUnderTest(
+              postWithAuthor: postWithAuthor,
+              currentUserId: 'user-1',
+            ),
+          );
+
+          // Wait for LikeStatusFetched to complete
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(Icons.favorite_border));
+          await tester.pump();
+
+          // Verify repository method was called
+          verify(
+            () => mockPostRepository.likePost(
+              postId: 'post-1',
+              currentUserId: 'user-1',
+            ),
+          ).called(1);
+        },
       );
     });
   });

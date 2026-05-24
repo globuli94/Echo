@@ -58,17 +58,18 @@ abstract class PostRemoteDataSource {
     required int limit,
   });
 
-  /// Atomically increments likeCount on [postId] and creates the likes doc.
-  Future<void> likePost({required String uid, required String postId});
+  /// Creates `posts/{postId}/likes/{uid}` with `{uid, likedAt: serverTimestamp()}`.
+  /// Also increments `posts/{postId}.likeCount` by 1.
+  /// Both writes run in a [WriteBatch].
+  Future<void> likePost({required String postId, required String uid});
 
-  /// Atomically decrements likeCount on [postId] and deletes the likes doc.
-  Future<void> unlikePost({required String uid, required String postId});
+  /// Deletes `posts/{postId}/likes/{uid}`.
+  /// Also decrements `posts/{postId}.likeCount` by 1.
+  /// Both writes run in a [WriteBatch].
+  Future<void> unlikePost({required String postId, required String uid});
 
-  /// Returns true if [uid] has liked [postId].
-  Future<bool> isLiked({required String uid, required String postId});
-
-  /// Streams whether [uid] has liked [postId].
-  Stream<bool> streamIsLiked({required String uid, required String postId});
+  /// Returns true if `posts/{postId}/likes/{uid}` exists.
+  Future<bool> isPostLikedBy({required String postId, required String uid});
 }
 
 class PostRemoteDataSourceImpl implements PostRemoteDataSource {
@@ -220,66 +221,43 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
   }
 
   @override
-  Future<void> likePost({
-    required String uid,
-    required String postId,
-  }) async {
+  Future<void> likePost({required String postId, required String uid}) async {
     final batch = _firestore.batch();
-    final likeDoc = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('likes')
-        .doc(postId);
-    final postDoc = _firestore.collection('posts').doc(postId);
+    final likeRef =
+        _firestore.collection('posts').doc(postId).collection('likes').doc(uid);
+    final postRef = _firestore.collection('posts').doc(postId);
 
-    batch.set(likeDoc, {'likedAt': FieldValue.serverTimestamp()});
-    batch.update(postDoc, {'likeCount': FieldValue.increment(1)});
+    batch.set(likeRef, {
+      'uid': uid,
+      'likedAt': FieldValue.serverTimestamp(),
+    });
+    batch.update(postRef, {'likeCount': FieldValue.increment(1)});
+
     await batch.commit();
   }
 
   @override
-  Future<void> unlikePost({
-    required String uid,
-    required String postId,
-  }) async {
+  Future<void> unlikePost({required String postId, required String uid}) async {
     final batch = _firestore.batch();
-    final likeDoc = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('likes')
-        .doc(postId);
-    final postDoc = _firestore.collection('posts').doc(postId);
+    final likeRef =
+        _firestore.collection('posts').doc(postId).collection('likes').doc(uid);
+    final postRef = _firestore.collection('posts').doc(postId);
 
-    batch.delete(likeDoc);
-    batch.update(postDoc, {'likeCount': FieldValue.increment(-1)});
+    batch.delete(likeRef);
+    batch.update(postRef, {'likeCount': FieldValue.increment(-1)});
+
     await batch.commit();
   }
 
   @override
-  Future<bool> isLiked({
-    required String uid,
-    required String postId,
-  }) async {
+  Future<bool> isPostLikedBy(
+      {required String postId, required String uid}) async {
     final doc = await _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('likes')
+        .collection('posts')
         .doc(postId)
+        .collection('likes')
+        .doc(uid)
         .get();
     return doc.exists;
-  }
-
-  @override
-  Stream<bool> streamIsLiked({
-    required String uid,
-    required String postId,
-  }) {
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('likes')
-        .doc(postId)
-        .snapshots()
-        .map((doc) => doc.exists);
   }
 }

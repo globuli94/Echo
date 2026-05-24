@@ -140,6 +140,29 @@ service cloud.firestore {
       // Only the author may delete their own post.
       allow delete: if request.auth != null
                     && resource.data.authorId == request.auth.uid;
+
+      // ---------------------------------------------------------------
+      // posts/{postId}/likes/{uid}
+      // ---------------------------------------------------------------
+      match /likes/{uid} {
+        // Any authenticated user may read a like document
+        // (e.g. to check if a specific user liked a post).
+        allow read: if request.auth != null;
+
+        // Only the owner (uid == auth.uid) may create their own like
+        // document. Enforce that the stored uid field matches both the
+        // document ID and the requesting user.
+        allow create: if request.auth != null
+                      && request.auth.uid == uid
+                      && request.resource.data.uid == uid;
+
+        // Only the owner may delete their own like document.
+        allow delete: if request.auth != null
+                      && request.auth.uid == uid;
+
+        // Updates to like documents are not permitted.
+        allow update: if false;
+      }
     }
 
   }

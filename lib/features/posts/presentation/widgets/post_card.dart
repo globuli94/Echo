@@ -10,8 +10,11 @@ import 'package:intl/intl.dart';
 
 import '../../domain/entities/post_with_author.dart';
 import '../../domain/repositories/post_repository.dart';
+import '../bloc/like_bloc.dart';
+import '../bloc/like_event.dart';
 import '../bloc/post_bloc.dart';
 import '../bloc/post_event.dart';
+import 'like_button.dart';
 
 class PostCard extends StatelessWidget {
   const PostCard({
@@ -112,36 +115,20 @@ class PostCard extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                StreamBuilder<bool>(
-                  stream: context.read<PostRepository>().streamIsLiked(
-                        uid: currentUserId,
-                        postId: post.postId,
-                      ),
-                  builder: (context, snapshot) {
-                    final liked = snapshot.data ?? false;
-                    return IconButton(
-                      icon: Icon(
-                        liked ? Icons.favorite : Icons.favorite_border,
-                      ),
-                      color: liked ? Colors.red : null,
-                      onPressed: () => context.read<PostBloc>().add(
-                            PostLikeToggled(
-                              postId: post.postId,
-                              postAuthorId: post.authorId,
-                              isCurrentlyLiked: liked,
-                              actorUid: currentUserId,
-                              actorDisplayName: currentUserDisplayName,
-                              actorAvatarUrl: currentUserAvatarUrl,
-                            ),
-                          ),
-                    );
-                  },
-                ),
-                Text('${post.likeCount}'),
-              ],
+            const SizedBox(height: 8),
+            BlocProvider<LikeBloc>(
+              key: ValueKey('like_${post.postId}'),
+              create: (ctx) =>
+                  LikeBloc(repository: ctx.read<PostRepository>())
+                    ..add(LikeStatusFetched(
+                      postId: post.postId,
+                      currentUserId: currentUserId,
+                      initialCount: post.likeCount,
+                    )),
+              child: LikeButton(
+                postId: post.postId,
+                currentUserId: currentUserId,
+              ),
             ),
           ],
         ),

@@ -167,22 +167,23 @@ class PostRepositoryImpl implements PostRepository {
   }
 
   @override
-  Future<void> likePost({required String uid, required String postId}) {
-    return _dataSource.likePost(uid: uid, postId: postId);
-  }
+  Future<void> likePost({
+    required String postId,
+    required String currentUserId,
+  }) =>
+      _dataSource.likePost(postId: postId, uid: currentUserId);
 
   @override
-  Future<void> unlikePost({required String uid, required String postId}) {
-    return _dataSource.unlikePost(uid: uid, postId: postId);
-  }
+  Future<void> unlikePost({
+    required String postId,
+    required String currentUserId,
+  }) =>
+      _dataSource.unlikePost(postId: postId, uid: currentUserId);
 
   @override
-  Future<bool> isLiked({required String uid, required String postId}) {
-    return _dataSource.isLiked(uid: uid, postId: postId);
-  }
-
-  @override
-  Stream<bool> streamIsLiked({required String uid, required String postId}) {
-    return _dataSource.streamIsLiked(uid: uid, postId: postId);
-  }
+  Future<bool> isPostLikedBy({
+    required String postId,
+    required String uid,
+  }) =>
+      _dataSource.isPostLikedBy(postId: postId, uid: uid);
 }
