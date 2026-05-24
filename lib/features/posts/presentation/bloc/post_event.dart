@@ -51,3 +51,35 @@ final class PostDeleteRequested extends PostEvent {
   @override
   List<Object?> get props => [postId, authorId];
 }
+
+/// Toggles the like state on a post.
+///
+/// When [isCurrentlyLiked] is true, the post will be unliked; otherwise liked.
+/// A like notification is sent to [postAuthorId] when liking (not unliking).
+final class PostLikeToggled extends PostEvent {
+  const PostLikeToggled({
+    required this.postId,
+    required this.postAuthorId,
+    required this.isCurrentlyLiked,
+    required this.actorUid,
+    required this.actorDisplayName,
+    this.actorAvatarUrl,
+  });
+
+  final String postId;
+  final String postAuthorId;
+  final bool isCurrentlyLiked;
+  final String actorUid;
+  final String actorDisplayName;
+  final String? actorAvatarUrl;
+
+  @override
+  List<Object?> get props => [
+        postId,
+        postAuthorId,
+        isCurrentlyLiked,
+        actorUid,
+        actorDisplayName,
+        actorAvatarUrl,
+      ];
+}

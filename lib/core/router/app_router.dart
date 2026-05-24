@@ -19,6 +19,7 @@ import '../../features/follow/domain/repositories/follow_repository.dart';
 import '../../features/follow/presentation/bloc/follow_bloc.dart';
 import '../../features/follow/presentation/bloc/follow_event.dart';
 import '../../features/follow/presentation/bloc/follow_list_bloc.dart';
+import '../../features/notifications/domain/repositories/notification_repository.dart';
 import '../../features/follow/presentation/screens/followers_screen.dart';
 import '../../features/follow/presentation/screens/following_screen.dart';
 import '../../features/navigation/presentation/screens/main_shell.dart';
@@ -26,6 +27,7 @@ import '../../features/posts/domain/repositories/post_repository.dart';
 import '../../features/posts/presentation/bloc/create_post_bloc.dart';
 import '../../features/posts/presentation/bloc/user_posts_bloc.dart';
 import '../../features/posts/presentation/screens/create_post_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/profile/domain/repositories/user_profile_repository.dart';
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
@@ -113,6 +115,8 @@ GoRouter createRouter(AuthBloc authBloc) {
               BlocProvider<FollowBloc>(
                 create: (ctx) => FollowBloc(
                   repository: ctx.read<FollowRepository>(),
+                  notificationRepository:
+                      ctx.read<NotificationRepository?>(),
                 )..add(FollowStatusSubscribed(
                     currentUid: currentUid,
                     targetUid: uid,
@@ -122,6 +126,10 @@ GoRouter createRouter(AuthBloc authBloc) {
             child: ProfileScreen(uid: uid),
           );
         },
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
       GoRoute(
         path: '/edit-profile',

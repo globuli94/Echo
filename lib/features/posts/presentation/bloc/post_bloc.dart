@@ -6,6 +6,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../follow/domain/repositories/follow_repository.dart';
+import '../../../notifications/domain/repositories/notification_repository.dart';
 import '../../domain/repositories/post_repository.dart';
 import 'post_event.dart';
 import 'post_state.dart';
@@ -17,17 +18,21 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   PostBloc({
     required PostRepository repository,
     FollowRepository? followRepository,
+    NotificationRepository? notificationRepository,
   })  : _repository = repository,
         _followRepository = followRepository,
+        _notificationRepository = notificationRepository,
         super(const PostsInitial()) {
     on<PostsFeedSubscribed>(_onFeedSubscribed);
     on<PostsFeedRefreshed>(_onFeedRefreshed);
     on<PostsFeedLoadMore>(_onLoadMore);
     on<PostDeleteRequested>(_onDeleteRequested);
+    on<PostLikeToggled>(_onLikeToggled);
   }
 
   final PostRepository _repository;
   final FollowRepository? _followRepository;
+  final NotificationRepository? _notificationRepository;
 
   /// Cached uid of the authenticated user, set on first feed load.
   String? _currentUid;
@@ -146,6 +151,34 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       }
     } catch (e) {
       emit(PostsError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onLikeToggled(
+    PostLikeToggled event,
+    Emitter<PostState> emit,
+  ) async {
+    try {
+      if (event.isCurrentlyLiked) {
+        await _repository.unlikePost(
+          uid: event.actorUid,
+          postId: event.postId,
+        );
+      } else {
+        await _repository.likePost(
+          uid: event.actorUid,
+          postId: event.postId,
+        );
+        await _notificationRepository?.createLikeNotification(
+          recipientUid: event.postAuthorId,
+          actorUid: event.actorUid,
+          actorDisplayName: event.actorDisplayName,
+          actorAvatarUrl: event.actorAvatarUrl,
+          postId: event.postId,
+        );
+      }
+    } catch (_) {
+      // Like/unlike errors are non-critical; likeCount is streamed on refresh.
     }
   }
 }

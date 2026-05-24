@@ -20,9 +20,15 @@ import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
+import 'features/auth/presentation/bloc/auth_state.dart';
 import 'features/follow/data/datasources/follow_remote_data_source.dart';
 import 'features/follow/data/repositories/follow_repository_impl.dart';
 import 'features/follow/domain/repositories/follow_repository.dart';
+import 'features/notifications/data/datasources/notification_remote_data_source.dart';
+import 'features/notifications/data/repositories/notification_repository_impl.dart';
+import 'features/notifications/domain/repositories/notification_repository.dart';
+import 'features/notifications/presentation/bloc/notification_bloc.dart';
+import 'features/notifications/presentation/bloc/notification_event.dart';
 import 'features/posts/data/datasources/post_remote_data_source.dart';
 import 'features/search/data/datasources/user_search_remote_data_source.dart';
 import 'features/search/data/repositories/user_search_repository_impl.dart';
@@ -82,6 +88,11 @@ Future<void> main() async {
   final userSearchRepository =
       UserSearchRepositoryImpl(dataSource: userSearchDataSource);
 
+  final notificationDataSource =
+      NotificationRemoteDataSourceImpl(firestore: firestore);
+  final notificationRepository =
+      NotificationRepositoryImpl(dataSource: notificationDataSource);
+
   final router = createRouter(authBloc);
 
   runApp(EchoApp(
@@ -91,6 +102,7 @@ Future<void> main() async {
     postRepository: postRepository,
     followRepository: followRepository,
     userSearchRepository: userSearchRepository,
+    notificationRepository: notificationRepository,
     router: router,
   ));
 }
@@ -108,6 +120,7 @@ class EchoApp extends StatelessWidget {
     required this.postRepository,
     required this.followRepository,
     required this.userSearchRepository,
+    required this.notificationRepository,
     required this.router,
   });
 
@@ -129,6 +142,9 @@ class EchoApp extends StatelessWidget {
   /// The backing [UserSearchRepository] exposed to child widgets.
   final UserSearchRepository userSearchRepository;
 
+  /// The backing [NotificationRepository] exposed to child widgets.
+  final NotificationRepository notificationRepository;
+
   /// The [GoRouter] instance created from [createRouter].
   final GoRouter router;
 
@@ -143,6 +159,8 @@ class EchoApp extends StatelessWidget {
         RepositoryProvider<FollowRepository>.value(value: followRepository),
         RepositoryProvider<UserSearchRepository>.value(
             value: userSearchRepository),
+        RepositoryProvider<NotificationRepository>.value(
+            value: notificationRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -156,6 +174,8 @@ class EchoApp extends StatelessWidget {
             create: (context) => PostBloc(
               repository: context.read<PostRepository>(),
               followRepository: context.read<FollowRepository>(),
+              notificationRepository:
+                  context.read<NotificationRepository>(),
             ),
           ),
           BlocProvider<UserPostsBloc>(
@@ -168,12 +188,26 @@ class EchoApp extends StatelessWidget {
               repository: context.read<UserSearchRepository>(),
             ),
           ),
+          BlocProvider<NotificationBloc>(
+            create: (context) => NotificationBloc(
+              repository: context.read<NotificationRepository>(),
+            ),
+          ),
         ],
-        child: MaterialApp.router(
-          title: 'Echo',
-          theme: AppTheme.dark,
-          routerConfig: router,
-          debugShowCheckedModeBanner: false,
+        child: BlocListener<AuthBloc, AuthState>(
+          listener: (context, authState) {
+            if (authState is AuthAuthenticated) {
+              context.read<NotificationBloc>().add(
+                    NotificationsSubscribed(uid: authState.user.uid),
+                  );
+            }
+          },
+          child: MaterialApp.router(
+            title: 'Echo',
+            theme: AppTheme.dark,
+            routerConfig: router,
+            debugShowCheckedModeBanner: false,
+          ),
         ),
       ),
     );

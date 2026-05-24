@@ -30,13 +30,17 @@ final class FollowRequested extends FollowEvent {
   const FollowRequested({
     required this.currentUid,
     required this.targetUid,
+    required this.actorDisplayName,
+    this.actorAvatarUrl,
   });
 
   final String currentUid;
   final String targetUid;
+  final String actorDisplayName;
+  final String? actorAvatarUrl;
 
   @override
-  List<Object?> get props => [currentUid, targetUid];
+  List<Object?> get props => [currentUid, targetUid, actorDisplayName, actorAvatarUrl];
 }
 
 /// Requests unfollow action.
