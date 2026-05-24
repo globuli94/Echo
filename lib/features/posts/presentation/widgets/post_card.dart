@@ -116,19 +116,25 @@ class PostCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 8),
-            BlocProvider<LikeBloc>(
-              key: ValueKey('like_${post.postId}'),
-              create: (ctx) =>
-                  LikeBloc(repository: ctx.read<PostRepository>())
-                    ..add(LikeStatusFetched(
-                      postId: post.postId,
-                      currentUserId: currentUserId,
-                      initialCount: post.likeCount,
-                    )),
-              child: LikeButton(
-                postId: post.postId,
-                currentUserId: currentUserId,
-              ),
+            Builder(
+              builder: (ctx) {
+                final repo = ctx.read<PostRepository?>();
+                if (repo == null) return const SizedBox.shrink();
+                return BlocProvider<LikeBloc>(
+                  key: ValueKey('like_${post.postId}'),
+                  create: (_) =>
+                      LikeBloc(repository: repo)
+                        ..add(LikeStatusFetched(
+                          postId: post.postId,
+                          currentUserId: currentUserId,
+                          initialCount: post.likeCount,
+                        )),
+                  child: LikeButton(
+                    postId: post.postId,
+                    currentUserId: currentUserId,
+                  ),
+                );
+              },
             ),
           ],
         ),
