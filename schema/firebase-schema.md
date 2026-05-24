@@ -90,6 +90,34 @@
 
 ---
 
+### `users/{uid}/notifications/{notificationId}`
+
+**Path:** `users/{uid}/notifications/{notificationId}`
+**Purpose:** Stores in-app notifications for a user. Documents are created when another user likes a post or follows the owner. The document ID is a Firestore auto-generated ID.
+**Owner:** Authenticated user whose UID matches the `uid` path segment.
+
+| Field | Firestore Type | Required | Description |
+|---|---|---|---|
+| `notificationId` | string | required | Mirrors the Firestore document ID |
+| `type` | string | required | Notification kind: `"like"` or `"follow"` |
+| `actorUid` | string | required | UID of the user who triggered the notification |
+| `actorDisplayName` | string | required | Denormalized display name of the actor |
+| `actorAvatarUrl` | string | optional | Denormalized avatar URL of the actor; omitted when actor has no avatar |
+| `postId` | string | optional | Document ID of the liked post; present only when `type == "like"` |
+| `read` | boolean | required | `false` when created; `true` when owner taps the notification |
+| `createdAt` | timestamp | required | Server timestamp set when the document is created |
+
+**Access patterns:**
+- Owner reads own notification document (`uid == auth.uid`) — single-document (get)
+- Owner lists own notifications subcollection (`uid == auth.uid`) — multi-document (list)
+- Any authenticated user creates a notification document in any user's subcollection (actor writing to recipient's subcollection)
+- Owner updates own notification document (`uid == auth.uid`) — mark as read; only `read` field
+
+**Query patterns:**
+- No filter, sort by `createdAt DESC` — notifications screen list; covered by Firestore's automatic single-field index on `createdAt`; no composite index required
+
+---
+
 ## Firebase Storage Paths
 
 | Path | Purpose | Owner | Access |
@@ -133,3 +161,4 @@ iOS OAuth configuration:
 | 2026-05-23 | Safe | SOCAA-417: `users/{uid}/following/{targetUid}` subcollection added with `followedAt` and `targetUid` fields; `users` update rule expanded to allow any authenticated user to increment `followerCount` or `followingCount`; composite index for `posts(authorId, createdAt)` confirmed present |
 | 2026-05-23 | Safe | SOCAA-420: Collection group read rule added for `following` (FollowersScreen); COLLECTION_GROUP index on `following.targetUid` added to `firestore.indexes.json`; access and query patterns updated in schema doc |
 | 2026-05-23 | Safe | SOCAA-424: `users` collection list access pattern added for `displayName` prefix search; query covered by Firestore automatic single-field index on `displayName` (no explicit composite index required); existing `allow read: if request.auth != null` rule confirmed to cover list operations |
+| 2026-05-24 | Safe | SOCAA-452: `users/{uid}/notifications/{notificationId}` subcollection added with 8 fields; owner can get/list/update (read-field only); any authenticated user can create; no new composite index required |
