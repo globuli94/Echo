@@ -77,4 +77,19 @@ abstract class PostRepository {
     DateTime? before,
     int limit = 15,
   });
+
+  Future<void> likePost({
+    required String postId,
+    required String currentUserId,
+  });
+
+  Future<void> unlikePost({
+    required String postId,
+    required String currentUserId,
+  });
+
+  Future<bool> isPostLikedBy({
+    required String postId,
+    required String uid,
+  });
 }

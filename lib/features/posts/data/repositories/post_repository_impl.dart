@@ -165,4 +165,25 @@ class PostRepositoryImpl implements PostRepository {
 
     return FeedPage(posts: posts, hasMore: hasMore, nextCursor: nextCursor);
   }
+
+  @override
+  Future<void> likePost({
+    required String postId,
+    required String currentUserId,
+  }) =>
+      _dataSource.likePost(postId: postId, uid: currentUserId);
+
+  @override
+  Future<void> unlikePost({
+    required String postId,
+    required String currentUserId,
+  }) =>
+      _dataSource.unlikePost(postId: postId, uid: currentUserId);
+
+  @override
+  Future<bool> isPostLikedBy({
+    required String postId,
+    required String uid,
+  }) =>
+      _dataSource.isPostLikedBy(postId: postId, uid: uid);
 }
