@@ -9,8 +9,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/entities/post_with_author.dart';
+import '../../domain/repositories/post_repository.dart';
+import '../bloc/like_bloc.dart';
+import '../bloc/like_event.dart';
 import '../bloc/post_bloc.dart';
 import '../bloc/post_event.dart';
+import 'like_button.dart';
 
 class PostCard extends StatelessWidget {
   const PostCard({
@@ -107,6 +111,21 @@ class PostCard extends StatelessWidget {
                 ),
               ),
             ],
+            const SizedBox(height: 8),
+            BlocProvider<LikeBloc>(
+              key: ValueKey('like_${post.postId}'),
+              create: (ctx) =>
+                  LikeBloc(repository: ctx.read<PostRepository>())
+                    ..add(LikeStatusFetched(
+                      postId: post.postId,
+                      currentUserId: currentUserId,
+                      initialCount: post.likeCount,
+                    )),
+              child: LikeButton(
+                postId: post.postId,
+                currentUserId: currentUserId,
+              ),
+            ),
           ],
         ),
       ),

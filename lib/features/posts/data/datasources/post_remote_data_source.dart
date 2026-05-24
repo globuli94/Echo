@@ -57,6 +57,19 @@ abstract class PostRemoteDataSource {
     DateTime? before,
     required int limit,
   });
+
+  /// Creates `posts/{postId}/likes/{uid}` with `{uid, likedAt: serverTimestamp()}`.
+  /// Also increments `posts/{postId}.likeCount` by 1.
+  /// Both writes run in a [WriteBatch].
+  Future<void> likePost({required String postId, required String uid});
+
+  /// Deletes `posts/{postId}/likes/{uid}`.
+  /// Also decrements `posts/{postId}.likeCount` by 1.
+  /// Both writes run in a [WriteBatch].
+  Future<void> unlikePost({required String postId, required String uid});
+
+  /// Returns true if `posts/{postId}/likes/{uid}` exists.
+  Future<bool> isPostLikedBy({required String postId, required String uid});
 }
 
 class PostRemoteDataSourceImpl implements PostRemoteDataSource {
@@ -205,5 +218,46 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
     return snapshot.docs
         .map((doc) => {'id': doc.id, ...doc.data()})
         .toList();
+  }
+
+  @override
+  Future<void> likePost({required String postId, required String uid}) async {
+    final batch = _firestore.batch();
+    final likeRef =
+        _firestore.collection('posts').doc(postId).collection('likes').doc(uid);
+    final postRef = _firestore.collection('posts').doc(postId);
+
+    batch.set(likeRef, {
+      'uid': uid,
+      'likedAt': FieldValue.serverTimestamp(),
+    });
+    batch.update(postRef, {'likeCount': FieldValue.increment(1)});
+
+    await batch.commit();
+  }
+
+  @override
+  Future<void> unlikePost({required String postId, required String uid}) async {
+    final batch = _firestore.batch();
+    final likeRef =
+        _firestore.collection('posts').doc(postId).collection('likes').doc(uid);
+    final postRef = _firestore.collection('posts').doc(postId);
+
+    batch.delete(likeRef);
+    batch.update(postRef, {'likeCount': FieldValue.increment(-1)});
+
+    await batch.commit();
+  }
+
+  @override
+  Future<bool> isPostLikedBy(
+      {required String postId, required String uid}) async {
+    final doc = await _firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('likes')
+        .doc(uid)
+        .get();
+    return doc.exists;
   }
 }
