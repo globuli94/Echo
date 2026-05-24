@@ -108,7 +108,7 @@
 
 **Access patterns:**
 - Authenticated user reads all conversations they participate in (`participantIds array-contains auth.uid`) — list (query)
-- Authenticated user reads a single conversation by deterministic ID — single-document (get), participant only
+- Authenticated user may attempt to get a conversation document by deterministic ID even when it does not yet exist (returns not-found, not permission-denied); existing documents require the caller to be a participant — single-document (get)
 - Authenticated user creates a new conversation (auth.uid must be in participantIds; participantIds.size() == 2) — single write
 - Authenticated user updates `lastMessage`, `lastMessageAt`, `lastMessageSenderId`, `unreadCounts` on a conversation they participate in — field-scoped update
 - Authenticated user updates `unreadCounts[auth.uid]` to 0 when they open a conversation (mark as read) — field-scoped update (covered by the same unreadCounts update rule)
@@ -185,3 +185,4 @@ iOS OAuth configuration:
 | 2026-05-23 | Safe | SOCAA-420: Collection group read rule added for `following` (FollowersScreen); COLLECTION_GROUP index on `following.targetUid` added to `firestore.indexes.json`; access and query patterns updated in schema doc |
 | 2026-05-23 | Safe | SOCAA-424: `users` collection list access pattern added for `displayName` prefix search; query covered by Firestore automatic single-field index on `displayName` (no explicit composite index required); existing `allow read: if request.auth != null` rule confirmed to cover list operations |
 | 2026-05-24 | Safe | SOCAA-445: `conversations` top-level collection and `conversations/{conversationId}/messages` subcollection added for 1-to-1 real-time direct messaging; Firestore rules updated for participant-scoped access; composite index added for `conversations(participantIds, lastMessageAt)` |
+| 2026-05-24 | Safe | SOCAA-444-fix: allow get on absent conversations/{conversationId} when resource == null — split `allow read` into `allow get` (resource==null OR participant) and `allow list` (participant only) to prevent permission-denied on non-existent documents |

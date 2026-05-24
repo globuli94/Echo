@@ -77,9 +77,16 @@ service cloud.firestore {
                && request.auth.uid in resource.data.participantIds;
       }
 
-      // Any participant may read the conversation document (single get or
-      // list query filtered by participantIds array-contains auth.uid).
-      allow read: if isParticipant();
+      // Allow an authenticated user to attempt a get on a conversation that
+      // may not exist yet (resource == null → doc absent, returns not-found).
+      // Existing docs are guarded by the participantIds check.
+      allow get: if request.auth != null
+                 && (resource == null
+                     || request.auth.uid in resource.data.participantIds);
+
+      // List queries always return existing documents, so resource is never
+      // null here — guard by participantIds as before.
+      allow list: if isParticipant();
 
       // Authenticated user may create a conversation when:
       //   - auth.uid is listed in participantIds
