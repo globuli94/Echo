@@ -57,6 +57,26 @@ service cloud.firestore {
       }
 
       // ---------------------------------------------------------------
+      // users/{uid}/likes/{postId}
+      // ---------------------------------------------------------------
+      match /likes/{postId} {
+        // Any authenticated user may read like documents
+        // (e.g. to stream whether they have liked a given post).
+        allow read: if request.auth != null;
+
+        // Only the liker (document parent uid == auth.uid) may
+        // create or delete their own like documents.
+        allow create: if request.auth != null
+                      && request.auth.uid == uid;
+
+        allow delete: if request.auth != null
+                      && request.auth.uid == uid;
+
+        // Updates to like documents are not permitted.
+        allow update: if false;
+      }
+
+      // ---------------------------------------------------------------
       // users/{uid}/notifications/{notificationId}
       // ---------------------------------------------------------------
       match /notifications/{notificationId} {

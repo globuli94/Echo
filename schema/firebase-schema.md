@@ -90,6 +90,26 @@
 
 ---
 
+### `users/{uid}/likes/{postId}`
+
+**Path:** `users/{uid}/likes/{postId}`
+**Purpose:** Records that `uid` has liked a post. Document ID equals the liked post's ID, enabling O(1) "have I liked this post?" lookup. Written atomically alongside incrementing `likeCount` on the target post.
+**Owner:** Authenticated user whose UID matches the `uid` path segment.
+
+| Field | Firestore Type | Required | Description |
+|---|---|---|---|
+| `likedAt` | timestamp | required | Server timestamp set when the like is created |
+
+**Access patterns:**
+- Any authenticated user reads any like document (to stream liked state)
+- Owner (`uid == auth.uid`) creates own like document
+- Owner (`uid == auth.uid`) deletes own like document (unlike)
+
+**Query patterns:**
+- Single-document get: `users/{uid}/likes/{postId}` — O(1) liked-state check; no index required
+
+---
+
 ### `users/{uid}/notifications/{notificationId}`
 
 **Path:** `users/{uid}/notifications/{notificationId}`
@@ -162,3 +182,4 @@ iOS OAuth configuration:
 | 2026-05-23 | Safe | SOCAA-420: Collection group read rule added for `following` (FollowersScreen); COLLECTION_GROUP index on `following.targetUid` added to `firestore.indexes.json`; access and query patterns updated in schema doc |
 | 2026-05-23 | Safe | SOCAA-424: `users` collection list access pattern added for `displayName` prefix search; query covered by Firestore automatic single-field index on `displayName` (no explicit composite index required); existing `allow read: if request.auth != null` rule confirmed to cover list operations |
 | 2026-05-24 | Safe | SOCAA-452: `users/{uid}/notifications/{notificationId}` subcollection added with 8 fields; owner can get/list/update (read-field only); any authenticated user can create; no new composite index required |
+| 2026-05-24 | Safe | SOCAA-451: `users/{uid}/likes/{postId}` subcollection added with `likedAt` field; owner can create/delete; any authenticated user can read; `posts` update rule expanded to allow any authenticated user to update `likeCount`; no new composite index required |
