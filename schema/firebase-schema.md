@@ -112,54 +112,51 @@
 
 ---
 
-### `conversations`
+### `users/{uid}/likes/{postId}`
 
-**Path:** `conversations/{conversationId}`
-**Purpose:** Stores 1-to-1 direct message conversations between two users. The document ID is deterministic: sort the two participant UIDs lexicographically and join with an underscore (e.g. `uid-aaa_uid-zzz`), enabling an O(1) existence check without a query.
-**Owner:** Both participants identified in `participantIds`.
+**Path:** `users/{uid}/likes/{postId}`
+**Purpose:** Records that `uid` has liked a post. Document ID equals the liked post's ID, enabling O(1) "have I liked this post?" lookup. Written atomically alongside incrementing `likeCount` on the target post.
+**Owner:** Authenticated user whose UID matches the `uid` path segment.
 
 | Field | Firestore Type | Required | Description |
 |---|---|---|---|
-| `conversationId` | string | required | Mirrors the document ID |
-| `participantIds` | array<string> | required | Exactly 2 UIDs sorted ascending |
-| `lastMessage` | string | optional | Preview text of the most recent message |
-| `lastMessageAt` | timestamp | optional | Timestamp of the most recent message |
-| `lastMessageSenderId` | string | optional | UID of the sender of the most recent message |
-| `unreadCounts` | map<string, number> | required | Map of uid → unread message count for that participant; e.g. `{"uid-a": 0, "uid-b": 3}` |
-| `createdAt` | timestamp | required | Server timestamp set on first creation |
+| `likedAt` | timestamp | required | Server timestamp set when the like is created |
 
 **Access patterns:**
-- Authenticated user reads all conversations they participate in (`participantIds array-contains auth.uid`) — list (query)
-- Authenticated user may attempt to get a conversation document by deterministic ID even when it does not yet exist (returns not-found, not permission-denied); existing documents require the caller to be a participant — single-document (get)
-- Authenticated user creates a new conversation (auth.uid must be in participantIds; participantIds.size() == 2) — single write
-- Authenticated user updates `lastMessage`, `lastMessageAt`, `lastMessageSenderId`, `unreadCounts` on a conversation they participate in — field-scoped update
-- Authenticated user updates `unreadCounts[auth.uid]` to 0 when they open a conversation (mark as read) — field-scoped update (covered by the same unreadCounts update rule)
+- Any authenticated user reads any like document (to stream liked state)
+- Owner (`uid == auth.uid`) creates own like document
+- Owner (`uid == auth.uid`) deletes own like document (unlike)
 
 **Query patterns:**
-- Filter `participantIds array-contains uid`, sort by `lastMessageAt DESC` — conversations list screen; **composite index required** (see `firestore.indexes.json`)
+- Single-document get: `users/{uid}/likes/{postId}` — O(1) liked-state check; no index required
 
 ---
 
-### `conversations/{conversationId}/messages`
+### `users/{uid}/notifications/{notificationId}`
 
-**Path:** `conversations/{conversationId}/messages/{messageId}`
-**Purpose:** Stores individual messages within a conversation. Document ID is Firestore auto-generated.
-**Owner:** Authenticated user whose UID matches the `senderId` field.
+**Path:** `users/{uid}/notifications/{notificationId}`
+**Purpose:** Stores in-app notifications for a user. Documents are created when another user likes a post or follows the owner. The document ID is a Firestore auto-generated ID.
+**Owner:** Authenticated user whose UID matches the `uid` path segment.
 
 | Field | Firestore Type | Required | Description |
 |---|---|---|---|
-| `messageId` | string | required | Mirrors the Firestore document ID |
-| `senderId` | string | required | Firebase Auth UID of the sender |
-| `content` | string | required | Text body of the message |
-| `createdAt` | timestamp | required | Server timestamp set when the message is created |
+| `notificationId` | string | required | Mirrors the Firestore document ID |
+| `type` | string | required | Notification kind: `"like"` or `"follow"` |
+| `actorUid` | string | required | UID of the user who triggered the notification |
+| `actorDisplayName` | string | required | Denormalized display name of the actor |
+| `actorAvatarUrl` | string | optional | Denormalized avatar URL of the actor; omitted when actor has no avatar |
+| `postId` | string | optional | Document ID of the liked post; present only when `type == "like"` |
+| `read` | boolean | required | `false` when created; `true` when owner taps the notification |
+| `createdAt` | timestamp | required | Server timestamp set when the document is created |
 
 **Access patterns:**
-- Authenticated user reads all messages in a conversation they participate in — list (subcollection query, sorted by `createdAt ASC`), real-time listener
-- Authenticated user creates a message in a conversation they participate in (senderId must equal auth.uid) — single write
-- Updates and deletes are not permitted via client SDK
+- Owner reads own notification document (`uid == auth.uid`) — single-document (get)
+- Owner lists own notifications subcollection (`uid == auth.uid`) — multi-document (list)
+- Any authenticated user creates a notification document in any user's subcollection (actor writing to recipient's subcollection)
+- Owner updates own notification document (`uid == auth.uid`) — mark as read; only `read` field
 
 **Query patterns:**
-- No filter, sort by `createdAt ASC` — chat screen real-time listener; covered by Firestore's automatic single-field index on `createdAt`; no composite index required
+- No filter, sort by `createdAt DESC` — notifications screen list; covered by Firestore's automatic single-field index on `createdAt`; no composite index required
 
 ---
 

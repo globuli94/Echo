@@ -21,10 +21,14 @@ class PostCard extends StatelessWidget {
     super.key,
     required this.postWithAuthor,
     required this.currentUserId,
+    this.currentUserDisplayName = '',
+    this.currentUserAvatarUrl,
   });
 
   final PostWithAuthor postWithAuthor;
   final String currentUserId;
+  final String currentUserDisplayName;
+  final String? currentUserAvatarUrl;
 
   @override
   Widget build(BuildContext context) {

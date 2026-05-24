@@ -254,6 +254,10 @@ class _FollowButton extends StatelessWidget {
           );
         }
 
+        final actorDisplayName = authState is AuthAuthenticated
+            ? (authState.user.displayName ?? '')
+            : '';
+
         return SizedBox(
           width: 96,
           child: ElevatedButton(
@@ -261,6 +265,7 @@ class _FollowButton extends StatelessWidget {
                   FollowRequested(
                     currentUid: uid,
                     targetUid: user.uid,
+                    actorDisplayName: actorDisplayName,
                   ),
                 ),
             child: const Text('Follow'),

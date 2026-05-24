@@ -55,6 +55,49 @@ service cloud.firestore {
         // Updates to follow documents are not permitted.
         allow update: if false;
       }
+
+      // ---------------------------------------------------------------
+      // users/{uid}/likes/{postId}
+      // ---------------------------------------------------------------
+      match /likes/{postId} {
+        // Any authenticated user may read like documents
+        // (e.g. to stream whether they have liked a given post).
+        allow read: if request.auth != null;
+
+        // Only the liker (document parent uid == auth.uid) may
+        // create or delete their own like documents.
+        allow create: if request.auth != null
+                      && request.auth.uid == uid;
+
+        allow delete: if request.auth != null
+                      && request.auth.uid == uid;
+
+        // Updates to like documents are not permitted.
+        allow update: if false;
+      }
+
+      // ---------------------------------------------------------------
+      // users/{uid}/notifications/{notificationId}
+      // ---------------------------------------------------------------
+      match /notifications/{notificationId} {
+        // Only the owner may read (get or list) their own notifications.
+        allow read: if request.auth != null
+                    && request.auth.uid == uid;
+
+        // Any authenticated user may create a notification in any user's
+        // subcollection (actor writing to recipient's subcollection).
+        allow create: if request.auth != null;
+
+        // Only the owner may update a notification, and only to mark it
+        // as read (the `read` field).
+        allow update: if request.auth != null
+                      && request.auth.uid == uid
+                      && request.resource.data.diff(resource.data).affectedKeys()
+                           .hasOnly(['read']);
+
+        // Deletion of notification documents is not permitted via the client SDK.
+        allow delete: if false;
+      }
     }
 
     // ---------------------------------------------------------------
