@@ -170,6 +170,36 @@ GoRouter createRouter(AuthBloc authBloc) {
           );
         },
       ),
+      GoRoute(
+        path: '/conversations',
+        builder: (context, state) {
+          final authState = context.read<AuthBloc>().state;
+          final uid =
+              authState is AuthAuthenticated ? authState.user.uid : '';
+          return ConversationsScreen(uid: uid);
+        },
+      ),
+      GoRoute(
+        path: '/chat/:conversationId',
+        builder: (context, state) {
+          final conversationId = state.pathParameters['conversationId']!;
+          final otherUserId = state.extra as String? ?? '';
+          final authState = context.read<AuthBloc>().state;
+          final currentUserId =
+              authState is AuthAuthenticated ? authState.user.uid : '';
+          return BlocProvider<ChatBloc>(
+            create: (ctx) => ChatBloc(
+              chatRepository: ctx.read<ChatRepository>(),
+              currentUserId: currentUserId,
+            ),
+            child: ChatScreen(
+              conversationId: conversationId,
+              otherUserId: otherUserId,
+              currentUserId: currentUserId,
+            ),
+          );
+        },
+      ),
     ],
   );
 }
