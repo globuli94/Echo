@@ -161,12 +161,12 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     try {
       if (event.isCurrentlyLiked) {
         await _repository.unlikePost(
-          uid: event.actorUid,
+          currentUserId: event.actorUid,
           postId: event.postId,
         );
       } else {
         await _repository.likePost(
-          uid: event.actorUid,
+          currentUserId: event.actorUid,
           postId: event.postId,
         );
         await _notificationRepository?.createLikeNotification(

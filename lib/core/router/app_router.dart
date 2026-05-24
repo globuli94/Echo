@@ -32,6 +32,10 @@ import '../../features/profile/domain/repositories/user_profile_repository.dart'
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/chat/bloc/chat/chat_bloc.dart';
+import '../../features/chat/data/chat_repository.dart';
+import '../../features/chat/screens/chat_screen.dart';
+import '../../features/chat/screens/conversations_screen.dart';
 
 /// A [ChangeNotifier] that forwards [AuthBloc] state changes to [GoRouter].
 ///

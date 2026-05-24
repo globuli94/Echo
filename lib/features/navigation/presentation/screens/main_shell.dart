@@ -38,6 +38,17 @@ class _MainShellState extends State<MainShell> {
     final unreadCount =
         notifState is NotificationsLoaded ? notifState.unreadCount : 0;
 
+    final authState = context.read<AuthBloc>().state;
+    final currentUid =
+        authState is AuthAuthenticated ? authState.user.uid : '';
+
+    final screens = [
+      const FeedScreen(),
+      const SearchScreen(),
+      ConversationsScreen(uid: currentUid),
+      ProfileScreen(uid: currentUid),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
