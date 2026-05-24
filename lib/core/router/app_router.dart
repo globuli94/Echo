@@ -168,7 +168,12 @@ GoRouter createRouter(AuthBloc authBloc) {
       ),
       GoRoute(
         path: '/conversations',
-        builder: (context, state) => const ConversationsScreen(),
+        builder: (context, state) {
+          final authState = context.read<AuthBloc>().state;
+          final uid =
+              authState is AuthAuthenticated ? authState.user.uid : '';
+          return ConversationsScreen(uid: uid);
+        },
       ),
       GoRoute(
         path: '/chat/:conversationId',
@@ -186,6 +191,7 @@ GoRouter createRouter(AuthBloc authBloc) {
             child: ChatScreen(
               conversationId: conversationId,
               otherUserId: otherUserId,
+              currentUserId: currentUserId,
             ),
           );
         },

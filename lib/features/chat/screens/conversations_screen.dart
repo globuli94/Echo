@@ -4,13 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../auth/presentation/bloc/auth_bloc.dart';
-import '../../auth/presentation/bloc/auth_state.dart';
 import '../bloc/conversations/conversations_bloc.dart';
 import '../widgets/conversation_tile.dart';
 
 class ConversationsScreen extends StatefulWidget {
-  const ConversationsScreen({super.key});
+  const ConversationsScreen({super.key, required this.uid});
+
+  /// The UID of the currently authenticated user. Provided by the router so
+  /// this screen has no implicit dependency on [AuthBloc].
+  final String uid;
 
   @override
   State<ConversationsScreen> createState() => _ConversationsScreenState();
@@ -20,12 +22,9 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   @override
   void initState() {
     super.initState();
-    final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated) {
-      context.read<ConversationsBloc>().add(
-            ConversationsSubscriptionRequested(uid: authState.user.uid),
-          );
-    }
+    context.read<ConversationsBloc>().add(
+          ConversationsSubscriptionRequested(uid: widget.uid),
+        );
   }
 
   @override
@@ -47,20 +46,15 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
               return const Center(child: Text('No conversations yet'));
             }
 
-            final authState = context.read<AuthBloc>().state;
-            final currentUid = authState is AuthAuthenticated
-                ? authState.user.uid
-                : '';
-
             return ListView.builder(
               itemCount: state.conversations.length,
               itemBuilder: (context, index) {
                 final conversation = state.conversations[index];
                 final otherUid = conversation.participantIds
-                    .firstWhere((id) => id != currentUid);
+                    .firstWhere((id) => id != widget.uid);
                 return ConversationTile(
                   conversation: conversation,
-                  currentUid: currentUid,
+                  currentUid: widget.uid,
                   onTap: () => context.push(
                     '/chat/${conversation.conversationId}',
                     extra: otherUid,

@@ -29,36 +29,23 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  static const _screens = <Widget>[
-    FeedScreen(),
-    SearchScreen(),
-    ConversationsScreen(),
-    ProfileScreen(),
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    // Kick off the conversations stream as soon as the shell mounts so that
-    // the unread badge in the nav bar stays up to date.
-    final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated) {
-      context.read<ConversationsBloc>().add(
-            ConversationsSubscriptionRequested(uid: authState.user.uid),
-          );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
     final currentUid =
         authState is AuthAuthenticated ? authState.user.uid : '';
 
+    final screens = <Widget>[
+      const FeedScreen(),
+      const SearchScreen(),
+      ConversationsScreen(uid: currentUid),
+      const ProfileScreen(),
+    ];
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: screens,
       ),
       bottomNavigationBar: BlocBuilder<ConversationsBloc, ConversationsState>(
         builder: (context, convState) {

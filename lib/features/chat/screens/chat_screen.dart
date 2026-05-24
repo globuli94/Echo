@@ -12,10 +12,15 @@ class ChatScreen extends StatefulWidget {
     super.key,
     required this.conversationId,
     required this.otherUserId,
+    required this.currentUserId,
   });
 
   final String conversationId;
   final String otherUserId;
+
+  /// The UID of the currently authenticated user. Provided by the router so
+  /// this screen has no implicit dependency on [AuthBloc].
+  final String currentUserId;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -35,7 +40,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUid = context.read<ChatBloc>().currentUserId;
+    final currentUid = widget.currentUserId;
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.otherUserId)),
