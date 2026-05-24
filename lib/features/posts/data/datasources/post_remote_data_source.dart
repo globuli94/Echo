@@ -57,6 +57,18 @@ abstract class PostRemoteDataSource {
     DateTime? before,
     required int limit,
   });
+
+  /// Atomically increments likeCount on [postId] and creates the likes doc.
+  Future<void> likePost({required String uid, required String postId});
+
+  /// Atomically decrements likeCount on [postId] and deletes the likes doc.
+  Future<void> unlikePost({required String uid, required String postId});
+
+  /// Returns true if [uid] has liked [postId].
+  Future<bool> isLiked({required String uid, required String postId});
+
+  /// Streams whether [uid] has liked [postId].
+  Stream<bool> streamIsLiked({required String uid, required String postId});
 }
 
 class PostRemoteDataSourceImpl implements PostRemoteDataSource {
@@ -205,5 +217,69 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
     return snapshot.docs
         .map((doc) => {'id': doc.id, ...doc.data()})
         .toList();
+  }
+
+  @override
+  Future<void> likePost({
+    required String uid,
+    required String postId,
+  }) async {
+    final batch = _firestore.batch();
+    final likeDoc = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('likes')
+        .doc(postId);
+    final postDoc = _firestore.collection('posts').doc(postId);
+
+    batch.set(likeDoc, {'likedAt': FieldValue.serverTimestamp()});
+    batch.update(postDoc, {'likeCount': FieldValue.increment(1)});
+    await batch.commit();
+  }
+
+  @override
+  Future<void> unlikePost({
+    required String uid,
+    required String postId,
+  }) async {
+    final batch = _firestore.batch();
+    final likeDoc = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('likes')
+        .doc(postId);
+    final postDoc = _firestore.collection('posts').doc(postId);
+
+    batch.delete(likeDoc);
+    batch.update(postDoc, {'likeCount': FieldValue.increment(-1)});
+    await batch.commit();
+  }
+
+  @override
+  Future<bool> isLiked({
+    required String uid,
+    required String postId,
+  }) async {
+    final doc = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('likes')
+        .doc(postId)
+        .get();
+    return doc.exists;
+  }
+
+  @override
+  Stream<bool> streamIsLiked({
+    required String uid,
+    required String postId,
+  }) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('likes')
+        .doc(postId)
+        .snapshots()
+        .map((doc) => doc.exists);
   }
 }

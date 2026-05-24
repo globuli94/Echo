@@ -4,13 +4,17 @@
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../notifications/domain/repositories/notification_repository.dart';
 import '../../domain/repositories/follow_repository.dart';
 import 'follow_event.dart';
 import 'follow_state.dart';
 
 class FollowBloc extends Bloc<FollowEvent, FollowState> {
-  FollowBloc({required FollowRepository repository})
-      : _repository = repository,
+  FollowBloc({
+    required FollowRepository repository,
+    NotificationRepository? notificationRepository,
+  })  : _repository = repository,
+        _notificationRepository = notificationRepository,
         super(const FollowInitial()) {
     on<FollowStatusSubscribed>(_onStatusSubscribed);
     on<FollowRequested>(_onFollowRequested);
@@ -18,6 +22,7 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
   }
 
   final FollowRepository _repository;
+  final NotificationRepository? _notificationRepository;
 
   Future<void> _onStatusSubscribed(
     FollowStatusSubscribed event,
@@ -47,6 +52,12 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
       await _repository.follow(
         currentUid: event.currentUid,
         targetUid: event.targetUid,
+      );
+      await _notificationRepository?.createFollowNotification(
+        recipientUid: event.targetUid,
+        actorUid: event.currentUid,
+        actorDisplayName: event.actorDisplayName,
+        actorAvatarUrl: event.actorAvatarUrl,
       );
       // Stream auto-updates via FollowStatusSubscribed — no manual emit needed.
     } catch (e) {

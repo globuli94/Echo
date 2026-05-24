@@ -13,6 +13,8 @@ import '../../../posts/presentation/bloc/post_bloc.dart';
 import '../../../posts/presentation/bloc/post_event.dart';
 import '../../../posts/presentation/bloc/post_state.dart';
 import '../../../posts/presentation/widgets/post_card.dart';
+import '../../../profile/presentation/bloc/profile_bloc.dart';
+import '../../../profile/presentation/bloc/profile_state.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -73,6 +75,12 @@ class _FeedScreenState extends State<FeedScreen> {
     final authState = context.read<AuthBloc?>()?.state;
     final currentUserId =
         authState is AuthAuthenticated ? authState.user.uid : '';
+    final currentUserDisplayName =
+        authState is AuthAuthenticated ? (authState.user.displayName ?? '') : '';
+    final profileState = context.read<ProfileBloc?>()?.state;
+    final currentUserAvatarUrl = profileState is ProfileLoaded
+        ? profileState.profile.avatarUrl
+        : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -107,6 +115,8 @@ class _FeedScreenState extends State<FeedScreen> {
                               return PostCard(
                                 postWithAuthor: state.posts[index],
                                 currentUserId: currentUserId,
+                                currentUserDisplayName: currentUserDisplayName,
+                                currentUserAvatarUrl: currentUserAvatarUrl,
                               );
                             },
                           ),

@@ -437,12 +437,19 @@ class _FollowButton extends StatelessWidget {
         }
 
         return ElevatedButton(
-          onPressed: () => context.read<FollowBloc>().add(
-                FollowRequested(
-                  currentUid: currentUid,
-                  targetUid: profile.uid,
-                ),
-              ),
+          onPressed: () {
+            final actorAuthState = context.read<AuthBloc>().state;
+            final actorDisplayName = actorAuthState is AuthAuthenticated
+                ? (actorAuthState.user.displayName ?? '')
+                : '';
+            context.read<FollowBloc>().add(
+                  FollowRequested(
+                    currentUid: currentUid,
+                    targetUid: profile.uid,
+                    actorDisplayName: actorDisplayName,
+                  ),
+                );
+          },
           child: const Text('Follow'),
         );
       },

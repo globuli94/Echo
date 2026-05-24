@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/entities/post_with_author.dart';
+import '../../domain/repositories/post_repository.dart';
 import '../bloc/post_bloc.dart';
 import '../bloc/post_event.dart';
 
@@ -17,10 +18,14 @@ class PostCard extends StatelessWidget {
     super.key,
     required this.postWithAuthor,
     required this.currentUserId,
+    this.currentUserDisplayName = '',
+    this.currentUserAvatarUrl,
   });
 
   final PostWithAuthor postWithAuthor;
   final String currentUserId;
+  final String currentUserDisplayName;
+  final String? currentUserAvatarUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +112,37 @@ class PostCard extends StatelessWidget {
                 ),
               ),
             ],
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                StreamBuilder<bool>(
+                  stream: context.read<PostRepository>().streamIsLiked(
+                        uid: currentUserId,
+                        postId: post.postId,
+                      ),
+                  builder: (context, snapshot) {
+                    final liked = snapshot.data ?? false;
+                    return IconButton(
+                      icon: Icon(
+                        liked ? Icons.favorite : Icons.favorite_border,
+                      ),
+                      color: liked ? Colors.red : null,
+                      onPressed: () => context.read<PostBloc>().add(
+                            PostLikeToggled(
+                              postId: post.postId,
+                              postAuthorId: post.authorId,
+                              isCurrentlyLiked: liked,
+                              actorUid: currentUserId,
+                              actorDisplayName: currentUserDisplayName,
+                              actorAvatarUrl: currentUserAvatarUrl,
+                            ),
+                          ),
+                    );
+                  },
+                ),
+                Text('${post.likeCount}'),
+              ],
+            ),
           ],
         ),
       ),

@@ -165,4 +165,24 @@ class PostRepositoryImpl implements PostRepository {
 
     return FeedPage(posts: posts, hasMore: hasMore, nextCursor: nextCursor);
   }
+
+  @override
+  Future<void> likePost({required String uid, required String postId}) {
+    return _dataSource.likePost(uid: uid, postId: postId);
+  }
+
+  @override
+  Future<void> unlikePost({required String uid, required String postId}) {
+    return _dataSource.unlikePost(uid: uid, postId: postId);
+  }
+
+  @override
+  Future<bool> isLiked({required String uid, required String postId}) {
+    return _dataSource.isLiked(uid: uid, postId: postId);
+  }
+
+  @override
+  Stream<bool> streamIsLiked({required String uid, required String postId}) {
+    return _dataSource.streamIsLiked(uid: uid, postId: postId);
+  }
 }

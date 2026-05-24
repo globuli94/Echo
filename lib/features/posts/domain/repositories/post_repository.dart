@@ -77,4 +77,16 @@ abstract class PostRepository {
     DateTime? before,
     int limit = 15,
   });
+
+  /// Atomically increments likeCount on [postId] and creates the like record.
+  Future<void> likePost({required String uid, required String postId});
+
+  /// Atomically decrements likeCount on [postId] and deletes the like record.
+  Future<void> unlikePost({required String uid, required String postId});
+
+  /// Returns true if [uid] has liked [postId].
+  Future<bool> isLiked({required String uid, required String postId});
+
+  /// Streams whether [uid] has liked [postId].
+  Stream<bool> streamIsLiked({required String uid, required String postId});
 }
